@@ -25,6 +25,7 @@ import { EllipsisVerticalIcon, PencilSquareIcon, TrashIcon, ArrowTopRightOnSquar
 import { Card, Button, Chip, TextField, Input, TextArea, Select, ListBox, Label, Dropdown } from "@heroui/react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import { PageHeader } from "@/components/ui/page-header";
 
 type Space = {
   id: string;
@@ -185,19 +186,19 @@ export function DashboardClient({ spaces, createSpace, deleteSpace, updateSpace 
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 py-6 sm:py-8">
-      <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-start gap-4 sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-1 sm:mb-2">Spaces</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">Organize your credentials by personal, company or clients.</p>
-        </div>
-        <Button
-          onPress={() => setIsCreateModalOpen(true)}
-          className="text-primary-foreground font-medium bg-primary hover:bg-primary-hover flex items-center gap-2"
-        >
-          <PlusIcon />
-          <span>Space</span>
-        </Button>
-      </div>
+      <PageHeader
+        title="Spaces"
+        description="Organize your credentials by personal, company or clients."
+        action={
+          <Button
+            onPress={() => setIsCreateModalOpen(true)}
+            className="text-primary-foreground font-medium bg-primary hover:bg-primary-hover flex items-center gap-2"
+          >
+            <PlusIcon />
+            <span>Space</span>
+          </Button>
+        }
+      />
 
       {/* Search + Filter pane — scalable: right of search, click to open pane */}
       <div className="mb-6 flex gap-3 items-center">

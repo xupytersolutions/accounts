@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { updateEntry, updateSpace } from "@/lib/actions";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+import { PageHeader } from "@/components/ui/page-header";
 import {
   LockClosedIcon,
   DocumentTextIcon,
@@ -36,6 +37,7 @@ import {
   BoltIcon,
   GlobeAltIcon,
   DevicePhoneMobileIcon,
+  FunnelIcon,
 } from "@heroicons/react/24/solid";
 
 type Category = { id: string; name: string; icon: string | null; color: string | null; logoUrl: string | null };
@@ -264,6 +266,12 @@ export function SpaceClient({
   const [importError, setImportError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // Search / filter / sort — parity with dashboard Spaces
+  const [search, setSearch] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("updated");
+
   // entry context menu + confirm modals
   const [entryCtx, setEntryCtx] = useState<{ id: string; x: number; y: number } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Entry | null>(null);
@@ -388,6 +396,60 @@ export function SpaceClient({
     if (cat) { setEditCatIcon(cat.icon || ""); setEditCatColor(cat.color || CATEGORY_COLORS[0]); setEditCatLogoUrl(cat.logoUrl || null); }
   }, [editCatKey, allCategories]);
 
+  // Filter open — close on outside click (same pattern as dashboard-client)
+  useEffect(() => {
+    if (!filterOpen) return;
+    const onClick = (e: MouseEvent) => {
+      const target = e.target as Element;
+      if (!target.closest("[data-filter-pane]") && !target.closest("[data-filter-trigger]")) setFilterOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, [filterOpen]);
+
+  // Derived filtered & sorted list — parity with dashboard Spaces filtering
+  const filteredEntries = space.entries
+    .filter((e) => {
+      if (categoryFilter !== "all") {
+        if (categoryFilter === "none") {
+          const hasCat = (e as unknown as { categoryRef?: Category | null }).categoryRef || e.category;
+          return !hasCat;
+        }
+        const catId = (e as unknown as { categoryRef?: Category | null }).categoryRef?.id ?? "";
+        const catName = (e as unknown as { categoryRef?: Category | null }).categoryRef?.name?.toLowerCase() ?? e.category?.toLowerCase() ?? "";
+        if (catId === categoryFilter) return true;
+        if (catName === categoryFilter.toLowerCase()) return true;
+        return false;
+      }
+      return true;
+    })
+    .filter((e) => {
+      if (!search.trim()) return true;
+      const q = search.toLowerCase();
+      const catName = (e as unknown as { categoryRef?: Category | null }).categoryRef?.name ?? e.category ?? "";
+      return (
+        (e.title ?? "").toLowerCase().includes(q) ||
+        e.email.toLowerCase().includes(q) ||
+        (e.description ?? "").toLowerCase().includes(q) ||
+        (e.url ?? "").toLowerCase().includes(q) ||
+        catName.toLowerCase().includes(q)
+      );
+    })
+    .sort((a, b) => {
+      if (sortBy === "title") return (a.title ?? a.email).localeCompare(b.title ?? b.email);
+      if (sortBy === "email") return a.email.localeCompare(b.email);
+      if (sortBy === "category") {
+        const ca = (a as unknown as { categoryRef?: Category | null }).categoryRef?.name ?? a.category ?? "";
+        const cb = (b as unknown as { categoryRef?: Category | null }).categoryRef?.name ?? b.category ?? "";
+        return ca.localeCompare(cb);
+      }
+      const da = a.updatedAt ? new Date(a.updatedAt as unknown as string).getTime() : 0;
+      const db = b.updatedAt ? new Date(b.updatedAt as unknown as string).getTime() : 0;
+      return db - da;
+    });
+
+  const activeFilterCount = (categoryFilter !== "all" ? 1 : 0) + (sortBy !== "updated" ? 1 : 0);
+
   const toggleSelect = (id: string) => {
     setSelected((prev) => {
       const n = new Set(prev);
@@ -396,8 +458,21 @@ export function SpaceClient({
     });
   };
   const selectAll = () => {
-    if (selected.size === space.entries.length) setSelected(new Set());
-    else setSelected(new Set(space.entries.map((e) => e.id)));
+    const ids = filteredEntries.map((e) => e.id);
+    const allSelected = ids.length > 0 && ids.every((id) => selected.has(id));
+    if (allSelected) {
+      setSelected((prev) => {
+        const n = new Set(prev);
+        ids.forEach((id) => n.delete(id));
+        return n;
+      });
+    } else {
+      setSelected((prev) => {
+        const n = new Set(prev);
+        ids.forEach((id) => n.add(id));
+        return n;
+      });
+    }
   };
 
   const handleExport = () => {
@@ -496,24 +571,22 @@ export function SpaceClient({
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 py-6 sm:py-10">
-      <div className="flex flex-wrap items-center gap-2 text-sm mb-6 sm:mb-8 min-w-0">
-        <Link href="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5 shrink-0">
-          <ArrowLeftIcon className="w-4 h-4" />
-          <span>Spaces</span>
-        </Link>
-        <span className="text-border-strong shrink-0">/</span>
-        <span className="font-semibold text-foreground truncate min-w-0 max-w-[50vw] sm:max-w-none">{space.name}</span>
-        <Chip size="sm" variant="soft" className="capitalize bg-muted text-muted-foreground border border-border shrink-0">
-          {space.type}
-        </Chip>
-      </div>
+      <PageHeader
+        breadcrumbs={[
+          { label: "Spaces", href: "/dashboard" },
+          { label: space.name },
+        ]}
+        badge={{ label: space.type }}
+      />
 
       <div className="flex flex-col gap-6">
         <Card className="border border-border bg-card shadow-sm w-full min-w-0 p-0">
           <Card.Header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 sm:px-7 py-4 sm:py-5 border-b border-border">
             <div className="flex gap-1 flex-col">
               <Card.Title className="text-base sm:text-xl font-semibold text-foreground truncate min-w-0">Accounts in {space.name}</Card.Title>
-              <span className="text-sm text-muted-foreground">{space.entries.length} total</span>
+              <span className="text-sm text-muted-foreground">
+                {search.trim() || categoryFilter !== "all" || sortBy !== "updated" ? `${filteredEntries.length} of ${space.entries.length} total` : `${space.entries.length} total`}
+              </span>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <Button onPress={() => { setEditing(null); setIsAddOpen(true); }} className="bg-primary hover:bg-primary-hover text-primary-foreground font-medium h-9">+ Account</Button>
@@ -577,15 +650,100 @@ export function SpaceClient({
               </div>
             ) : (
               <div className="p-2">
-                <div className="flex items-center justify-between px-4 py-2 mb-2 bg-muted/20 border border-border rounded-lg">
-                  <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground cursor-pointer">
-                    <input type="checkbox" checked={selected.size === space.entries.length && space.entries.length > 0} onChange={selectAll} className="rounded border-border h-4 w-4" />
-                    Select all
-                  </label>
-                  <span className="text-xs text-muted-foreground">{selected.size} selected</span>
+                {/* Search + Filter pane — parity with dashboard Spaces */}
+                <div className="mb-2 flex gap-3 items-center px-1">
+                  <div className="flex-1 relative min-w-0">
+                    <svg className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <Input
+                      placeholder="Search accounts..."
+                      value={search}
+                      onChange={(e) => setSearch((e.target as HTMLInputElement).value)}
+                      className="pl-10 h-10 border-1 w-full"
+                      aria-label="Search accounts"
+                    />
+                  </div>
+                  <div className="relative shrink-0" data-filter-trigger>
+                    <Button
+                      variant="tertiary"
+                      onPress={() => setFilterOpen((v) => !v)}
+                      className="h-10 px-4 gap-2 bg-card border border-border shadow-none rounded-xl text-foreground hover:bg-muted shrink-0"
+                      aria-expanded={filterOpen}
+                      aria-controls="filter-pane-accounts"
+                    >
+                      <FunnelIcon className="w-4 h-4" />
+                      <span className="hidden sm:inline">Filters</span>
+                      {activeFilterCount > 0 && <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold">{activeFilterCount}</span>}
+                    </Button>
+                    {filterOpen && (
+                      <div
+                        id="filter-pane-accounts"
+                        data-filter-pane
+                        className="absolute right-0 top-full mt-2 w-[320px] max-w-[min(320px,calc(100vw-2rem))] bg-popover border border-border shadow-sm rounded-xl p-4 z-20 flex flex-col gap-4"
+                      >
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-sm font-semibold text-foreground">Filters</h4>
+                          {activeFilterCount > 0 && (
+                            <button onClick={() => { setCategoryFilter("all"); setSortBy("updated"); setSearch(""); }} className="text-xs text-primary hover:underline">Clear all</button>
+                          )}
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-medium text-muted-foreground">Category</Label>
+                          <Select selectedKey={categoryFilter} onSelectionChange={(k) => setCategoryFilter(String(k))} className="w-full">
+                            <Select.Trigger className="bg-card border border-border text-foreground h-9">
+                              <Select.Value className="text-foreground" />
+                            </Select.Trigger>
+                            <Select.Popover className="bg-popover border border-border shadow-sm">
+                              <ListBox className="p-1">
+                                <ListBox.Item id="all" className="text-popover-foreground data-[focused]:bg-muted">All categories</ListBox.Item>
+                                <ListBox.Item id="none" className="text-popover-foreground data-[focused]:bg-muted">No category</ListBox.Item>
+                                {allCategories.map((c) => (
+                                  <ListBox.Item key={c.id} id={c.id} textValue={c.name} className="text-popover-foreground data-[focused]:bg-muted">{c.name}</ListBox.Item>
+                                ))}
+                              </ListBox>
+                            </Select.Popover>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-medium text-muted-foreground">Sort by</Label>
+                          <Select selectedKey={sortBy} onSelectionChange={(k) => setSortBy(String(k))} className="w-full">
+                            <Select.Trigger className="bg-card border border-border text-foreground h-9">
+                              <Select.Value className="text-foreground" />
+                            </Select.Trigger>
+                            <Select.Popover className="bg-popover border border-border shadow-sm">
+                              <ListBox className="p-1">
+                                <ListBox.Item id="updated" className="text-popover-foreground data-[focused]:bg-muted">Last updated</ListBox.Item>
+                                <ListBox.Item id="title" className="text-popover-foreground data-[focused]:bg-muted">Title</ListBox.Item>
+                                <ListBox.Item id="email" className="text-popover-foreground data-[focused]:bg-muted">Login</ListBox.Item>
+                                <ListBox.Item id="category" className="text-popover-foreground data-[focused]:bg-muted">Category</ListBox.Item>
+                              </ListBox>
+                            </Select.Popover>
+                          </Select>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                <div className="space-y-2">{space.entries.map((e) => {
+                <div className="flex items-center justify-between px-4 py-2 mb-2 bg-muted/20 border border-border rounded-lg">
+                  <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground cursor-pointer">
+                    <input type="checkbox" checked={filteredEntries.length > 0 && filteredEntries.every((e) => selected.has(e.id))} onChange={selectAll} className="rounded border-border h-4 w-4" />
+                    Select all
+                  </label>
+                  <span className="text-xs text-muted-foreground">{selected.size} selected{filteredEntries.length !== space.entries.length ? ` • ${filteredEntries.length} shown` : ""}</span>
+                </div>
+
+                {filteredEntries.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 border border-dashed border-border rounded-xl bg-muted/20 mx-1">
+                    <p className="text-sm font-medium text-foreground mb-1">No matches</p>
+                    <p className="text-sm text-muted-foreground mb-4">Try adjusting search or filters.</p>
+                    <Button variant="tertiary" onPress={() => { setSearch(""); setCategoryFilter("all"); setSortBy("updated"); }}>Clear filters</Button>
+                  </div>
+                ) : (
+                <div className="space-y-2">{filteredEntries.map((e) => {
                   const presetMatch = (name: string) => ACCOUNT_CATEGORY_PRESETS.find((p) => p.label.toLowerCase() === name.toLowerCase() || p.id === name.toLowerCase());
                   const displayCat: Category | { name: string; icon: string | null; color: string | null; logoUrl: string | null } | null =
                     (e as unknown as { categoryRef?: Category | null }).categoryRef ?? (e.category ? { name: e.category, icon: e.icon, color: e.color, logoUrl: (e as unknown as { logoUrl?: string | null }).logoUrl ?? presetMatch(e.category)?.logoUrl ?? null } : null);
@@ -622,8 +780,15 @@ export function SpaceClient({
                           size="sm"
                           aria-label="Account menu"
                           className="opacity-60 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity h-8 w-8 min-w-8"
-                          onPress={(ev) => {
-                            const target = (ev as unknown as { currentTarget: HTMLElement }).currentTarget;
+                          onPress={(ev: unknown) => {
+                            const anyEv = ev as { target?: Element; currentTarget?: Element };
+                            const raw = (anyEv?.currentTarget ?? anyEv?.target) as HTMLElement | undefined;
+                            const target = (raw?.closest?.("button") as HTMLElement | null) ?? raw ?? null;
+                            if (!target?.getBoundingClientRect) {
+                              // fallback center if press event has no DOM target (e.g. keyboard)
+                              setEntryCtx((prev) => (prev?.id === e.id ? null : { id: e.id, x: window.innerWidth / 2, y: window.innerHeight / 2 }));
+                              return;
+                            }
                             const r = target.getBoundingClientRect();
                             const x = Math.min(r.right - 160, window.innerWidth - 180);
                             const y = r.bottom + 8;
@@ -698,6 +863,7 @@ export function SpaceClient({
                   );
                   })}
                 </div>
+                )}
 
                 {/* Entry context menu — same style as space card ctx menu */}
                 {entryCtx && entryCtxEntry && (

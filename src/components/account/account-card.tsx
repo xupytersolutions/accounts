@@ -106,7 +106,7 @@ export function AccountCard({
 
         {/* URL Row */}
         {entry.url && (
-          <div className="flex items-center gap-2 mb-3 ml-16">
+          <div className="flex items-center gap-2 mb-3 ml-0 sm:ml-16">
             <svg
               className="w-4 h-4 text-primary shrink-0"
               fill="none"
@@ -145,38 +145,42 @@ export function AccountCard({
         )}
 
         {/* Password Row */}
-        <div className="flex items-center gap-3 mb-3 ml-16">
-          <svg
-            className="w-4 h-4 text-muted-foreground shrink-0"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-            />
-          </svg>
-          <code className="font-mono text-sm text-foreground flex-1 tracking-wide">
-            {showPassword ? entry.password : "••••••••••"}
-          </code>
-          <div className="flex gap-2 shrink-0">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3 ml-0 sm:ml-16">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <svg
+              className="w-4 h-4 text-muted-foreground shrink-0"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+              />
+            </svg>
+            <div className="flex-1 min-w-0 px-3 py-2 rounded-lg border border-border bg-muted/30">
+              <code className="font-mono text-sm text-foreground tracking-wide break-all">
+                {showPassword ? entry.password : "••••••••••"}
+              </code>
+            </div>
+          </div>
+          <div className="flex gap-2 shrink-0 ml-0 sm:ml-0">
             <button
               onClick={() => setShowPassword(!showPassword)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-muted/50 hover:bg-muted text-foreground text-sm transition-colors"
+              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-border bg-muted/50 hover:bg-muted text-foreground text-sm transition-colors min-w-[80px]"
             >
               {showPassword ? (
                 <EyeSlashIcon className="w-4 h-4" />
               ) : (
                 <EyeIcon className="w-4 h-4" />
               )}
-              Show
+              <span className="hidden sm:inline">Show</span>
             </button>
             <button
               onClick={() => navigator.clipboard.writeText(entry.password)}
-              className="px-4 py-1.5 rounded-lg bg-primary hover:bg-primary-hover text-primary-foreground font-medium text-sm transition-colors"
+              className="px-4 py-2 rounded-lg bg-primary hover:bg-primary-hover text-primary-foreground font-medium text-sm transition-colors whitespace-nowrap"
             >
               Copy
             </button>
@@ -184,7 +188,7 @@ export function AccountCard({
         </div>
 
         {/* Note Section */}
-        <div className="ml-16 pt-2 border-t border-border">
+        <div className="ml-0 sm:ml-16 pt-2 border-t border-border">
           <div className="flex items-start gap-2">
             <svg
               className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5"
@@ -201,7 +205,7 @@ export function AccountCard({
             </svg>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium text-muted-foreground mb-1">
-                Description
+                Note
               </p>
               <p className="text-sm text-muted-foreground leading-relaxed break-words">
                 {entry.description?.trim() || "no description"}

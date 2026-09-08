@@ -2,7 +2,7 @@
 import { Card, Button, Chip } from "@heroui/react";
 import Link from "next/link";
 import { useState, useRef } from "react";
-import { ArrowLeftIcon, LockClosedIcon } from "@heroicons/react/24/outline";
+import { LockClosedIcon } from "@heroicons/react/24/outline";
 import {
   PencilSquareIcon,
   TrashIcon,
@@ -24,6 +24,7 @@ import { parseImportText, exportEntriesToFile } from "@/lib/utils";
 import { AccountCard } from "@/components/account/account-card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ContextMenu } from "@/components/ui/context-menu";
+import { PageHeader } from "@/components/ui/page-header";
 
 type SpaceClientProps = {
   space: SpaceWithEntries;
@@ -140,27 +141,13 @@ export function SpaceClient({
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 py-6 sm:py-10">
-      {/* Breadcrumb */}
-      <div className="flex flex-wrap items-center gap-2 text-sm mb-6 sm:mb-8 min-w-0">
-        <Link
-          href="/dashboard"
-          className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5 shrink-0"
-        >
-          <ArrowLeftIcon className="w-4 h-4" />
-          <span>Spaces</span>
-        </Link>
-        <span className="text-border-strong shrink-0">/</span>
-        <span className="font-semibold text-foreground truncate min-w-0 max-w-[50vw] sm:max-w-none">
-          {space.name}
-        </span>
-        <Chip
-          size="sm"
-          variant="soft"
-          className="capitalize bg-muted text-muted-foreground border border-border shrink-0"
-        >
-          {space.type}
-        </Chip>
-      </div>
+      <PageHeader
+        breadcrumbs={[
+          { label: "Spaces", href: "/dashboard" },
+          { label: space.name },
+        ]}
+        badge={{ label: space.type }}
+      />
 
       {/* Main Card */}
       <Card className="border border-border bg-card shadow-sm w-full min-w-0 p-0">
