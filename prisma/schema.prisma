@@ -1,0 +1,130 @@
+// Vaulta – Accounts manager
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SpaceType {
+  personal
+  company
+  client
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  spaces        Space[]
+  categories    Category[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model Space {
+  id          String    @id @default(cuid())
+  name        String
+  type        SpaceType @default(personal)
+  description String?   @db.Text
+  color       String?   @default("#006FEE")
+  icon        String?
+  ownerId     String
+  owner       User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  entries     VaultEntry[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([ownerId])
+  @@map("spaces")
+}
+
+model Category {
+  id        String       @id @default(cuid())
+  name      String
+  icon      String?
+  color     String?      @default("#006FEE")
+  logoUrl   String?
+  ownerId   String
+  owner     User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  entries   VaultEntry[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@unique([ownerId, name])
+  @@index([ownerId])
+  @@map("categories")
+}
+
+model VaultEntry {
+  id          String    @id @default(cuid())
+  spaceId     String
+  space       Space     @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  title       String?   // optional display name for the credential
+  email       String    // account email
+  password    String    @db.Text // encrypted at rest in future; plain for MVP
+  description String?   @db.Text
+  url         String?
+  category    String?   // legacy free text e.g. gmail, yahoo - kept for import fallback
+  icon        String?   // heroicon id for category icon (fallback if no categoryRef)
+  color       String?   @default("#006FEE")
+  logoUrl     String?
+  categoryId  String?
+  categoryRef Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([spaceId])
+  @@index([categoryId])
+  @@map("vault_entries")
+}
