@@ -18,9 +18,8 @@
 cp .env.example .env
 # edit .env: DATABASE_URL, AUTH_SECRET, AUTH_GOOGLE_ID, AUTH_GOOGLE_SECRET
 
-pnpm install
-pnpm prisma generate
-pnpm prisma migrate dev --name init
+pnpm install        # also runs prisma generate via postinstall
+pnpm db:migrate:dev --name init  # create & apply migration (dev only)
 pnpm dev
 # http://localhost:3000  public landing at / , auth at /login, vault at /dashboard
 ```
@@ -35,6 +34,31 @@ Generate auth secret:
 
 ```bash
 openssl rand -hex 32
+```
+
+## Database (Prisma + Postgres)
+
+Schema: `prisma/schema.prisma` — client generated to `src/generated/prisma` (never edit generated files).
+
+| Command | When to use |
+|---------|-------------|
+| `pnpm db:generate` | Regenerate client after schema changes |
+| `pnpm db:migrate:dev --name <name>` | **Dev**: create a new migration and apply it locally |
+| `pnpm db:migrate:deploy` | **Prod/CI**: apply pending migrations non-interactively (no new migration created) |
+| `pnpm db:studio` | Open Prisma Studio GUI |
+
+Dev flow (after editing `prisma/schema.prisma`):
+
+```bash
+pnpm db:migrate:dev --name add_foo
+pnpm db:generate
+```
+
+Prod / deploy flow (e.g. Dockerfile, CI, Vercel build):
+
+```bash
+pnpm db:migrate:deploy
+# build already runs `prisma generate && next build`
 ```
 
 ## Test

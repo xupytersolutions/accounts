@@ -1,76 +1,31 @@
 "use client";
-import { Card, Button, TextField, Input, TextArea, Label, Chip, Select, ListBox, Dropdown, Separator } from "@heroui/react";
+import { Card, Button, TextField, Input, InputGroup, TextArea, Label, Select, ListBox, Dropdown, Separator, Checkbox, FieldError } from "@heroui/react";
 import { entrySchema, updateEntrySchema } from "@/lib/validators";
-import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
-import { updateEntry, updateSpace } from "@/lib/actions";
-import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+import { updateEntry } from "@/lib/actions";
 import { PageHeader } from "@/components/ui/page-header";
+import { CATEGORY_PRESETS, getPresetLogoUrl, findPresetByName } from "@/lib/constants/category-presets";
+import { ICON_OPTIONS as CATEGORY_ICON_OPTIONS, ICON_MAP as CATEGORY_ICON_MAP, COLORS as CATEGORY_COLORS } from "@/lib/constants/icons";
 import {
   LockClosedIcon,
-  DocumentTextIcon,
   EllipsisVerticalIcon,
   PencilSquareIcon,
   TrashIcon,
   ArrowsRightLeftIcon,
   ClipboardDocumentIcon,
+  CheckIcon,
   EyeIcon,
   EyeSlashIcon,
   ExclamationTriangleIcon,
   ArrowUpTrayIcon,
   ArrowDownTrayIcon,
 } from "@heroicons/react/24/outline";
-import {
-  FolderIcon,
-  BriefcaseIcon,
-  UserIcon,
-  BuildingOffice2Icon,
-  ShieldCheckIcon,
-  StarIcon,
-  RocketLaunchIcon,
-  CreditCardIcon,
-  KeyIcon,
-  HomeIcon,
-  LightBulbIcon,
-  CubeIcon,
-  HeartIcon,
-  BoltIcon,
-  GlobeAltIcon,
-  DevicePhoneMobileIcon,
-  FunnelIcon,
-} from "@heroicons/react/24/solid";
+import { FunnelIcon } from "@heroicons/react/24/solid";
 
 type Category = { id: string; name: string; icon: string | null; color: string | null; logoUrl: string | null };
 type Entry = { id: string; title: string | null; email: string; password: string; description: string | null; url: string | null; category: string | null; icon: string | null; color: string | null; logoUrl: string | null; categoryId: string | null; categoryRef?: Category | null; updatedAt?: string | Date };
 type Space = { id: string; name: string; type: string; description: string | null; entries: Entry[]; updatedAt?: string | Date };
 type SpaceOpt = { id: string; name: string; type: string };
-
-const CATEGORY_COLORS = ["#006FEE", "#17C964", "#F5A524", "#F31260", "#7828C8", "#06B7DB", "#FF6900", "#9353D3"];
-
-type CatIconOption = { id: string; label: string; Icon: React.ElementType | null };
-const CATEGORY_ICON_OPTIONS: CatIconOption[] = [
-  { id: "", label: "Initial (Aa)", Icon: null },
-  { id: "FolderIcon", label: "Folder", Icon: FolderIcon },
-  { id: "BriefcaseIcon", label: "Briefcase", Icon: BriefcaseIcon },
-  { id: "UserIcon", label: "User", Icon: UserIcon },
-  { id: "BuildingOffice2Icon", label: "Company", Icon: BuildingOffice2Icon },
-  { id: "ShieldCheckIcon", label: "Shield", Icon: ShieldCheckIcon },
-  { id: "StarIcon", label: "Star", Icon: StarIcon },
-  { id: "RocketLaunchIcon", label: "Rocket", Icon: RocketLaunchIcon },
-  { id: "CreditCardIcon", label: "Card", Icon: CreditCardIcon },
-  { id: "KeyIcon", label: "Key", Icon: KeyIcon },
-  { id: "HomeIcon", label: "Home", Icon: HomeIcon },
-  { id: "LightBulbIcon", label: "Idea", Icon: LightBulbIcon },
-  { id: "CubeIcon", label: "Cube", Icon: CubeIcon },
-  { id: "HeartIcon", label: "Heart", Icon: HeartIcon },
-  { id: "BoltIcon", label: "Bolt", Icon: BoltIcon },
-  { id: "GlobeAltIcon", label: "Globe", Icon: GlobeAltIcon },
-  { id: "DevicePhoneMobileIcon", label: "Mobile", Icon: DevicePhoneMobileIcon },
-];
-
-const CATEGORY_ICON_MAP: Record<string, React.ElementType> = Object.fromEntries(
-  CATEGORY_ICON_OPTIONS.filter((o) => o.id && o.Icon).map((o) => [o.id, o.Icon as React.ElementType])
-);
 
 function CategoryIcon({ icon, className = "w-5 h-5" }: { icon: string | null; className?: string }) {
   const Comp = icon ? CATEGORY_ICON_MAP[icon] : null;
@@ -78,24 +33,7 @@ function CategoryIcon({ icon, className = "w-5 h-5" }: { icon: string | null; cl
   return null;
 }
 
-const ACCOUNT_CATEGORY_PRESETS: Array<{ id: string; label: string; icon: string; color: string; logoUrl: string; domain: string }> = [
-  { id: "gmail", label: "Gmail", icon: "CubeIcon", color: "#EA4335", logoUrl: "https://cdn.simpleicons.org/gmail/ffffff", domain: "gmail.com" },
-  { id: "yahoo", label: "Yahoo", icon: "GlobeAltIcon", color: "#6001D2", logoUrl: "https://cdn.simpleicons.org/yahoo/ffffff", domain: "yahoo.com" },
-  { id: "google", label: "Google", icon: "GlobeAltIcon", color: "#4285F4", logoUrl: "https://cdn.simpleicons.org/google/ffffff", domain: "google.com" },
-  { id: "facebook", label: "Facebook", icon: "UserIcon", color: "#1877F2", logoUrl: "https://cdn.simpleicons.org/facebook/ffffff", domain: "facebook.com" },
-  { id: "instagram", label: "Instagram", icon: "HeartIcon", color: "#E4405F", logoUrl: "https://cdn.simpleicons.org/instagram/ffffff", domain: "instagram.com" },
-  { id: "twitter", label: "X / Twitter", icon: "BoltIcon", color: "#000000", logoUrl: "https://cdn.simpleicons.org/x/ffffff", domain: "x.com" },
-  { id: "linkedin", label: "LinkedIn", icon: "BriefcaseIcon", color: "#0A66C2", logoUrl: "https://cdn.simpleicons.org/linkedin/ffffff", domain: "linkedin.com" },
-  { id: "github", label: "GitHub", icon: "CubeIcon", color: "#181717", logoUrl: "https://cdn.simpleicons.org/github/ffffff", domain: "github.com" },
-  { id: "apple", label: "Apple", icon: "DevicePhoneMobileIcon", color: "#000000", logoUrl: "https://cdn.simpleicons.org/apple/ffffff", domain: "apple.com" },
-  { id: "microsoft", label: "Microsoft", icon: "BuildingOffice2Icon", color: "#00A4EF", logoUrl: "https://cdn.simpleicons.org/microsoft/ffffff", domain: "microsoft.com" },
-  { id: "netflix", label: "Netflix", icon: "StarIcon", color: "#E50914", logoUrl: "https://cdn.simpleicons.org/netflix/ffffff", domain: "netflix.com" },
-  { id: "slack", label: "Slack", icon: "FolderIcon", color: "#E01E5A", logoUrl: "https://cdn.simpleicons.org/slack/ffffff", domain: "slack.com" },
-];
-
-function getPresetLogoUrl(id: string): string | null {
-  return ACCOUNT_CATEGORY_PRESETS.find((p) => p.id === id)?.logoUrl ?? null;
-}
+const ACCOUNT_CATEGORY_PRESETS = CATEGORY_PRESETS;
 
 type ImportRow = { uid: string; title: string; email: string; password: string; url: string; description: string; category: string };
 
@@ -242,6 +180,7 @@ export function SpaceClient({
   bulkTransferEntries: (entryIds: string[], targetSpaceId: string) => Promise<void>;
 }) {
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editing, setEditing] = useState<Entry | null>(null);
   const [isEditSpaceOpen, setIsEditSpaceOpen] = useState(false);
@@ -279,6 +218,7 @@ export function SpaceClient({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isTransferring, setIsTransferring] = useState(false);
   const [entryFormError, setEntryFormError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!isAddOpen && !importOpen && !transferOpen && !isEditSpaceOpen && !deleteTarget && !bulkDeleteOpen) return;
@@ -326,7 +266,10 @@ export function SpaceClient({
       setCreateCatLogoUrl(null);
       setCreateCatColor(CATEGORY_COLORS[0]);
     }
-    if (isAddOpen) setEntryFormError(null);
+    if (isAddOpen) {
+      setEntryFormError(null);
+      setFieldErrors({});
+    }
   }, [isAddOpen, editing]);
 
   // populate edit category when editing changes
@@ -570,247 +513,260 @@ export function SpaceClient({
   const entryCtxEntry = entryCtx ? space.entries.find((e) => e.id === entryCtx.id) ?? null : null;
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 py-6 sm:py-10">
+    <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 py-6 sm:py-8">
       <PageHeader
         breadcrumbs={[
           { label: "Spaces", href: "/dashboard" },
           { label: space.name },
         ]}
+        title={space.name}
+        description={space.description?.trim() ? space.description : `Manage credentials in this ${space.type} space.`}
         badge={{ label: space.type }}
+        action={
+          <div className="flex items-center gap-2">
+            <Button onPress={() => { setEditing(null); setIsAddOpen(true); }} className="bg-primary hover:bg-primary-hover text-primary-foreground font-medium h-9">+ Account</Button>
+            <Dropdown>
+              <Button isIconOnly variant="tertiary" size="sm" aria-label="Account actions" className="h-9 w-9 border border-border bg-card">
+                <EllipsisVerticalIcon className="w-5 h-5" />
+              </Button>
+              <Dropdown.Popover className="bg-popover border border-border shadow-sm rounded-xl min-w-[200px]">
+                <Dropdown.Menu
+                  aria-label="Account actions"
+                  className="p-1"
+                  onAction={(key) => {
+                    if (key === "export") handleExport();
+                    if (key === "import") setImportOpen(true);
+                    if (key === "bulk-transfer" && selected.size > 0) setTransferOpen({ ids: Array.from(selected) });
+                    if (key === "bulk-delete" && selected.size > 0) setBulkDeleteOpen(true);
+                  }}
+                >
+                  {selected.size > 0 && (
+                    <>
+                      <Dropdown.Item id="bulk-transfer" textValue="Transfer selected" className="rounded-lg text-foreground data-[focused]:bg-muted">
+                        <div className="flex items-center gap-2">
+                          <ArrowsRightLeftIcon className="w-4 h-4" />
+                          <span>Transfer ({selected.size})</span>
+                        </div>
+                      </Dropdown.Item>
+                      <Dropdown.Item id="bulk-delete" textValue="Delete selected" className="rounded-lg text-destructive data-[focused]:bg-destructive/10 data-[focused]:text-destructive">
+                        <div className="flex items-center gap-2">
+                          <TrashIcon className="w-4 h-4" />
+                          <span>Delete ({selected.size})</span>
+                        </div>
+                      </Dropdown.Item>
+                      <Separator className="my-1 bg-border" />
+                    </>
+                  )}
+                  <Dropdown.Item id="export" textValue="Export txt" className="rounded-lg text-foreground data-[focused]:bg-muted flex items-center gap-2">
+                    <div className="flex items-center gap-2">
+                      <ArrowDownTrayIcon className="w-4 h-4" />
+                      <span>Export txt</span>
+                    </div>
+                  </Dropdown.Item>
+                  <Dropdown.Item id="import" textValue="Import txt" className="rounded-lg text-foreground data-[focused]:bg-muted flex items-center gap-2">
+                    <div className="flex items-center gap-2">
+                      <ArrowUpTrayIcon className="w-4 h-4" />
+                      <span>Import txt</span>
+                    </div>
+                  </Dropdown.Item>
+                </Dropdown.Menu>
+              </Dropdown.Popover>
+            </Dropdown>
+          </div>
+        }
       />
 
-      <div className="flex flex-col gap-6">
-        <Card className="border border-border bg-card shadow-sm w-full min-w-0 p-0">
-          <Card.Header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 sm:px-7 py-4 sm:py-5 border-b border-border">
-            <div className="flex gap-1 flex-col">
-              <Card.Title className="text-base sm:text-xl font-semibold text-foreground truncate min-w-0">Accounts in {space.name}</Card.Title>
-              <span className="text-sm text-muted-foreground">
-                {search.trim() || categoryFilter !== "all" || sortBy !== "updated" ? `${filteredEntries.length} of ${space.entries.length} total` : `${space.entries.length} total`}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <Button onPress={() => { setEditing(null); setIsAddOpen(true); }} className="bg-primary hover:bg-primary-hover text-primary-foreground font-medium h-9">+ Account</Button>
-              <Dropdown>
-                <Button isIconOnly variant="tertiary" size="sm" aria-label="Account actions" className="h-9 w-9 border border-border">
-                  <EllipsisVerticalIcon className="w-5 h-5" />
-                </Button>
-                <Dropdown.Popover className="bg-popover border border-border shadow-sm rounded-xl min-w-[200px]">
-                  <Dropdown.Menu
-                    aria-label="Account actions"
-                    className="p-1"
-                    onAction={(key) => {
-                      if (key === "export") handleExport();
-                      if (key === "import") setImportOpen(true);
-                      if (key === "bulk-transfer" && selected.size > 0) setTransferOpen({ ids: Array.from(selected) });
-                      if (key === "bulk-delete" && selected.size > 0) setBulkDeleteOpen(true);
-                    }}
-                  >
-                    {selected.size > 0 && (
-                      <>
-                        <Dropdown.Item id="bulk-transfer" textValue="Transfer selected" className="rounded-lg text-foreground data-[focused]:bg-muted">
-                          <div className="flex items-center gap-2">
-                            <ArrowsRightLeftIcon className="w-4 h-4" />
-                            <span>Transfer ({selected.size})</span>
-                          </div>
-                        </Dropdown.Item>
-                        <Dropdown.Item id="bulk-delete" textValue="Delete selected" className="rounded-lg text-destructive data-[focused]:bg-destructive/10 data-[focused]:text-destructive">
-                          <div className="flex items-center gap-2">
-                            <TrashIcon className="w-4 h-4" />
-                            <span>Delete ({selected.size})</span>
-                          </div>
-                        </Dropdown.Item>
-                        <Separator className="my-1 bg-border" />
-                      </>
-                    )}
-                    <Dropdown.Item id="export" textValue="Export txt" className="rounded-lg text-foreground data-[focused]:bg-muted flex items-center gap-2">
-                      <div className="flex items-center gap-2">
-                        <ArrowDownTrayIcon className="w-4 h-4" />
-                        <span>Export txt</span>
-                      </div>
-                    </Dropdown.Item>
-                    <Dropdown.Item id="import" textValue="Import txt" className="rounded-lg text-foreground data-[focused]:bg-muted flex items-center gap-2">
-                      <div className="flex items-center gap-2">
-                        <ArrowUpTrayIcon className="w-4 h-4" />
-                        <span>Import txt</span>
-                      </div>
-                    </Dropdown.Item>
-                  </Dropdown.Menu>
-                </Dropdown.Popover>
-              </Dropdown>
-            </div>
-          </Card.Header>
-          <Card.Content className="p-0">
-            {space.entries.length === 0 ? (
-              <div className="px-4 sm:px-7 py-16 text-center">
-                <div className="mx-auto w-16 h-16 rounded-2xl bg-muted border border-border flex items-center justify-center mb-4">
-                  <LockClosedIcon className="w-8 h-8 text-muted-foreground" />
-                </div>
-                <p className="text-sm font-medium text-foreground mb-1">No accounts yet</p>
-                <p className="text-sm text-muted-foreground">Add your first account.</p>
+      {/* Search + Filter — parity with dashboard, outside any Card */}
+      <div className="mb-6 flex gap-3 items-center">
+        <div className="flex-1 relative min-w-0">
+          <svg className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <Input
+            placeholder="Search accounts..."
+            value={search}
+            onChange={(e) => setSearch((e.target as HTMLInputElement).value)}
+            className="pl-10 h-10 border-1 w-full"
+            aria-label="Search accounts"
+          />
+        </div>
+        <div className="relative shrink-0" data-filter-trigger>
+          <Button
+            variant="tertiary"
+            onPress={() => setFilterOpen((v) => !v)}
+            className="h-10 px-4 gap-2 bg-card border border-border shadow-none rounded-xl text-foreground hover:bg-muted shrink-0"
+            aria-expanded={filterOpen}
+            aria-controls="filter-pane-accounts"
+          >
+            <FunnelIcon className="w-4 h-4" />
+            <span className="hidden sm:inline">Filters</span>
+            {activeFilterCount > 0 && <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold">{activeFilterCount}</span>}
+          </Button>
+          {filterOpen && (
+            <div
+              id="filter-pane-accounts"
+              data-filter-pane
+              className="absolute right-0 top-full mt-2 w-[320px] max-w-[min(320px,calc(100vw-2rem))] bg-popover border border-border shadow-sm rounded-xl p-4 z-20 flex flex-col gap-4"
+            >
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-semibold text-foreground">Filters</h4>
+                {activeFilterCount > 0 && (
+                  <button onClick={() => { setCategoryFilter("all"); setSortBy("updated"); setSearch(""); }} className="text-xs text-primary hover:underline">Clear all</button>
+                )}
               </div>
-            ) : (
-              <div className="p-2">
-                {/* Search + Filter pane — parity with dashboard Spaces */}
-                <div className="mb-2 flex gap-3 items-center px-1">
-                  <div className="flex-1 relative min-w-0">
-                    <svg className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    <Input
-                      placeholder="Search accounts..."
-                      value={search}
-                      onChange={(e) => setSearch((e.target as HTMLInputElement).value)}
-                      className="pl-10 h-10 border-1 w-full"
-                      aria-label="Search accounts"
-                    />
-                  </div>
-                  <div className="relative shrink-0" data-filter-trigger>
-                    <Button
-                      variant="tertiary"
-                      onPress={() => setFilterOpen((v) => !v)}
-                      className="h-10 px-4 gap-2 bg-card border border-border shadow-none rounded-xl text-foreground hover:bg-muted shrink-0"
-                      aria-expanded={filterOpen}
-                      aria-controls="filter-pane-accounts"
-                    >
-                      <FunnelIcon className="w-4 h-4" />
-                      <span className="hidden sm:inline">Filters</span>
-                      {activeFilterCount > 0 && <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold">{activeFilterCount}</span>}
-                    </Button>
-                    {filterOpen && (
-                      <div
-                        id="filter-pane-accounts"
-                        data-filter-pane
-                        className="absolute right-0 top-full mt-2 w-[320px] max-w-[min(320px,calc(100vw-2rem))] bg-popover border border-border shadow-sm rounded-xl p-4 z-20 flex flex-col gap-4"
-                      >
-                        <div className="flex items-center justify-between">
-                          <h4 className="text-sm font-semibold text-foreground">Filters</h4>
-                          {activeFilterCount > 0 && (
-                            <button onClick={() => { setCategoryFilter("all"); setSortBy("updated"); setSearch(""); }} className="text-xs text-primary hover:underline">Clear all</button>
-                          )}
-                        </div>
 
-                        <div className="space-y-1.5">
-                          <Label className="text-xs font-medium text-muted-foreground">Category</Label>
-                          <Select selectedKey={categoryFilter} onSelectionChange={(k) => setCategoryFilter(String(k))} className="w-full">
-                            <Select.Trigger className="bg-card border border-border text-foreground h-9">
-                              <Select.Value className="text-foreground" />
-                            </Select.Trigger>
-                            <Select.Popover className="bg-popover border border-border shadow-sm">
-                              <ListBox className="p-1">
-                                <ListBox.Item id="all" className="text-popover-foreground data-[focused]:bg-muted">All categories</ListBox.Item>
-                                <ListBox.Item id="none" className="text-popover-foreground data-[focused]:bg-muted">No category</ListBox.Item>
-                                {allCategories.map((c) => (
-                                  <ListBox.Item key={c.id} id={c.id} textValue={c.name} className="text-popover-foreground data-[focused]:bg-muted">{c.name}</ListBox.Item>
-                                ))}
-                              </ListBox>
-                            </Select.Popover>
-                          </Select>
-                        </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-muted-foreground">Category</Label>
+                <Select selectedKey={categoryFilter} onSelectionChange={(k) => setCategoryFilter(String(k))} className="w-full">
+                  <Select.Trigger className="bg-card border border-border text-foreground h-9">
+                    <Select.Value className="text-foreground" />
+                  </Select.Trigger>
+                  <Select.Popover className="bg-popover border border-border shadow-sm">
+                    <ListBox className="p-1">
+                      <ListBox.Item id="all" className="text-popover-foreground data-[focused]:bg-muted">All categories</ListBox.Item>
+                      <ListBox.Item id="none" className="text-popover-foreground data-[focused]:bg-muted">No category</ListBox.Item>
+                      {allCategories.map((c) => (
+                        <ListBox.Item key={c.id} id={c.id} textValue={c.name} className="text-popover-foreground data-[focused]:bg-muted">{c.name}</ListBox.Item>
+                      ))}
+                    </ListBox>
+                  </Select.Popover>
+                </Select>
+              </div>
 
-                        <div className="space-y-1.5">
-                          <Label className="text-xs font-medium text-muted-foreground">Sort by</Label>
-                          <Select selectedKey={sortBy} onSelectionChange={(k) => setSortBy(String(k))} className="w-full">
-                            <Select.Trigger className="bg-card border border-border text-foreground h-9">
-                              <Select.Value className="text-foreground" />
-                            </Select.Trigger>
-                            <Select.Popover className="bg-popover border border-border shadow-sm">
-                              <ListBox className="p-1">
-                                <ListBox.Item id="updated" className="text-popover-foreground data-[focused]:bg-muted">Last updated</ListBox.Item>
-                                <ListBox.Item id="title" className="text-popover-foreground data-[focused]:bg-muted">Title</ListBox.Item>
-                                <ListBox.Item id="email" className="text-popover-foreground data-[focused]:bg-muted">Login</ListBox.Item>
-                                <ListBox.Item id="category" className="text-popover-foreground data-[focused]:bg-muted">Category</ListBox.Item>
-                              </ListBox>
-                            </Select.Popover>
-                          </Select>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-muted-foreground">Sort by</Label>
+                <Select selectedKey={sortBy} onSelectionChange={(k) => setSortBy(String(k))} className="w-full">
+                  <Select.Trigger className="bg-card border border-border text-foreground h-9">
+                    <Select.Value className="text-foreground" />
+                  </Select.Trigger>
+                  <Select.Popover className="bg-popover border border-border shadow-sm">
+                    <ListBox className="p-1">
+                      <ListBox.Item id="updated" className="text-popover-foreground data-[focused]:bg-muted">Last updated</ListBox.Item>
+                      <ListBox.Item id="title" className="text-popover-foreground data-[focused]:bg-muted">Title</ListBox.Item>
+                      <ListBox.Item id="email" className="text-popover-foreground data-[focused]:bg-muted">Login</ListBox.Item>
+                      <ListBox.Item id="category" className="text-popover-foreground data-[focused]:bg-muted">Category</ListBox.Item>
+                    </ListBox>
+                  </Select.Popover>
+                </Select>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
 
-                <div className="flex items-center justify-between px-4 py-2 mb-2 bg-muted/20 border border-border rounded-lg">
-                  <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground cursor-pointer">
-                    <input type="checkbox" checked={filteredEntries.length > 0 && filteredEntries.every((e) => selected.has(e.id))} onChange={selectAll} className="rounded border-border h-4 w-4" />
-                    Select all
-                  </label>
-                  <span className="text-xs text-muted-foreground">{selected.size} selected{filteredEntries.length !== space.entries.length ? ` • ${filteredEntries.length} shown` : ""}</span>
-                </div>
+      {space.entries.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20">
+          <div className="w-16 h-16 rounded-2xl bg-muted border border-border flex items-center justify-center mb-4">
+            <LockClosedIcon className="w-8 h-8 text-muted-foreground" />
+          </div>
+          <p className="text-base font-medium text-foreground mb-1">No accounts yet</p>
+          <p className="text-sm text-muted-foreground mb-6">Add your first account to this space</p>
+          <Button onPress={() => { setEditing(null); setIsAddOpen(true); }} className="bg-primary hover:bg-primary-hover text-primary-foreground font-medium h-9">+ Account</Button>
+        </div>
+      ) : (
+        <>
+          <div className="flex items-center justify-between px-1 mb-3">
+            <span className="text-sm text-muted-foreground">
+              {search.trim() || categoryFilter !== "all" || sortBy !== "updated" ? `${filteredEntries.length} of ${space.entries.length} total` : `${space.entries.length} total`}
+            </span>
+            <span className="text-xs text-muted-foreground hidden sm:inline">updated {timeAgo(space.updatedAt)}</span>
+          </div>
+
+          <div className="flex items-center gap-2 px-1 mb-4">
+            <Checkbox
+              isSelected={filteredEntries.length > 0 && filteredEntries.every((e) => selected.has(e.id))}
+              onChange={selectAll}
+              className="text-sm"
+            >
+              <Checkbox.Content>
+                <Checkbox.Control>
+                  <Checkbox.Indicator />
+                </Checkbox.Control>
+                Select all
+              </Checkbox.Content>
+            </Checkbox>
+            <span className="text-sm text-muted-foreground ml-auto">{selected.size} selected{filteredEntries.length !== space.entries.length ? ` • ${filteredEntries.length} shown` : ""}</span>
+          </div>
 
                 {filteredEntries.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 border border-dashed border-border rounded-xl bg-muted/20 mx-1">
+                  <div className="flex flex-col items-center justify-center py-12 border border-dashed border-border rounded-xl bg-muted/20">
                     <p className="text-sm font-medium text-foreground mb-1">No matches</p>
                     <p className="text-sm text-muted-foreground mb-4">Try adjusting search or filters.</p>
                     <Button variant="tertiary" onPress={() => { setSearch(""); setCategoryFilter("all"); setSortBy("updated"); }}>Clear filters</Button>
                   </div>
                 ) : (
-                <div className="space-y-2">{filteredEntries.map((e) => {
+                <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-8">{filteredEntries.map((e) => {
                   const presetMatch = (name: string) => ACCOUNT_CATEGORY_PRESETS.find((p) => p.label.toLowerCase() === name.toLowerCase() || p.id === name.toLowerCase());
                   const displayCat: Category | { name: string; icon: string | null; color: string | null; logoUrl: string | null } | null =
                     (e as unknown as { categoryRef?: Category | null }).categoryRef ?? (e.category ? { name: e.category, icon: e.icon, color: e.color, logoUrl: (e as unknown as { logoUrl?: string | null }).logoUrl ?? presetMatch(e.category)?.logoUrl ?? null } : null);
-                  const catColor = displayCat?.color || presetMatch(displayCat?.name ?? "")?.color || "#006FEE";
+                  const catColor = displayCat?.color || presetMatch(displayCat?.name ?? "")?.color || CATEGORY_COLORS[0];
                   const catIcon = displayCat?.icon || presetMatch(displayCat?.name ?? "")?.icon || null;
                   const presetLogo = displayCat ? presetMatch(displayCat.name)?.logoUrl ?? getPresetLogoUrl(displayCat.name.toLowerCase()) : null;
                   const catLogo = presetLogo || (displayCat as unknown as { logoUrl?: string | null })?.logoUrl || null;
                   return (
-                  <div key={e.id} className="p-2">
-                    <div 
-                      className="bg-card border border-border rounded-2xl p-4 hover:bg-muted/20 transition-colors group relative"
-                      onContextMenu={(ev) => { ev.preventDefault(); setEntryCtx({ id: e.id, x: ev.clientX, y: ev.clientY }); }}
-                    >
-                      {/* Header: Checkbox + Logo + Title/Email + Menu */}
-                      <div className="flex items-start gap-3 mb-3">
-                        <input 
-                          type="checkbox" 
-                          checked={selected.has(e.id)} 
-                          onChange={() => toggleSelect(e.id)} 
-                          className="mt-1 rounded border-border h-4 w-4 shrink-0" 
-                        />
-                        <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 text-white overflow-hidden" style={{ backgroundColor: displayCat ? catColor : "#006FEE" }}>
-                          {catLogo ? (
-                            <img src={catLogo} alt={displayCat!.name} className="w-7 h-7 object-contain" onError={(ev) => { (ev.currentTarget as HTMLImageElement).style.display = "none"; }} />
-                          ) : catIcon ? <CategoryIcon icon={catIcon} className="w-6 h-6 text-white" /> : <span className="text-white font-bold text-lg">{(e.title ?? e.email).charAt(0).toUpperCase()}</span>}
+                  <Card
+                    key={e.id}
+                    className="w-full shadow-none hover:scale-102 duration-500 transition-scale rounded-2xl group cursor-pointer"
+                    onContextMenu={(e2) => { e2.preventDefault(); setEntryCtx({ id: e.id, x: e2.clientX, y: e2.clientY }); }}
+                  >
+                    <Card.Content className="p-2 flex flex-col gap-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-2" onClick={(ev) => ev.stopPropagation()}>
+                          <Checkbox
+                            isSelected={selected.has(e.id)}
+                            onChange={() => toggleSelect(e.id)}
+                            aria-label="Select account"
+                            className="shrink-0"
+                          >
+                            <Checkbox.Content>
+                              <Checkbox.Control>
+                                <Checkbox.Indicator />
+                              </Checkbox.Control>
+                            </Checkbox.Content>
+                          </Checkbox>
+                          <div className="w-10 h-10 rounded-md flex items-center justify-center shrink-0 text-white" style={{ backgroundColor: catColor }}>
+                            {catLogo ? (
+                              <img src={catLogo} alt={displayCat!.name} className="w-5 h-5 object-contain" onError={(ev) => { (ev.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                            ) : catIcon ? <CategoryIcon icon={catIcon} className="w-5 h-5 text-white" /> : <span className="font-bold text-sm">{(e.title ?? e.email).charAt(0).toUpperCase()}</span>}
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-base font-semibold text-foreground mb-0.5 truncate">{e.title ?? displayCat?.name ?? "Account"}</h3>
-                          <p className="text-sm text-muted-foreground truncate">{e.email}</p>
+                        <div className="flex items-center gap-1.5" onClick={(ev) => ev.stopPropagation()}>
+                          <Button
+                            isIconOnly
+                            variant="tertiary"
+                            size="sm"
+                            aria-label="Account menu"
+                            className="opacity-60 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity h-7 w-7 min-w-7"
+                            onPress={(ev: unknown) => {
+                              const anyEv = ev as { target?: Element; currentTarget?: Element };
+                              const raw = (anyEv?.currentTarget ?? anyEv?.target) as HTMLElement | undefined;
+                              const target = (raw?.closest?.("button") as HTMLElement | null) ?? raw ?? null;
+                              if (!target?.getBoundingClientRect) {
+                                setEntryCtx((prev) => (prev?.id === e.id ? null : { id: e.id, x: window.innerWidth / 2, y: window.innerHeight / 2 }));
+                                return;
+                              }
+                              const r = target.getBoundingClientRect();
+                              const x = Math.min(r.right - 160, window.innerWidth - 180);
+                              const y = r.bottom + 8;
+                              setEntryCtx((prev) => (prev?.id === e.id ? null : { id: e.id, x, y }));
+                            }}
+                          >
+                            <EllipsisVerticalIcon className="w-4 h-4 text-muted-foreground" />
+                          </Button>
                         </div>
-                        <Button
-                          isIconOnly
-                          variant="tertiary"
-                          size="sm"
-                          aria-label="Account menu"
-                          className="opacity-60 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity h-8 w-8 min-w-8"
-                          onPress={(ev: unknown) => {
-                            const anyEv = ev as { target?: Element; currentTarget?: Element };
-                            const raw = (anyEv?.currentTarget ?? anyEv?.target) as HTMLElement | undefined;
-                            const target = (raw?.closest?.("button") as HTMLElement | null) ?? raw ?? null;
-                            if (!target?.getBoundingClientRect) {
-                              // fallback center if press event has no DOM target (e.g. keyboard)
-                              setEntryCtx((prev) => (prev?.id === e.id ? null : { id: e.id, x: window.innerWidth / 2, y: window.innerHeight / 2 }));
-                              return;
-                            }
-                            const r = target.getBoundingClientRect();
-                            const x = Math.min(r.right - 160, window.innerWidth - 180);
-                            const y = r.bottom + 8;
-                            setEntryCtx((prev) => (prev?.id === e.id ? null : { id: e.id, x, y }));
-                          }}
-                        >
-                          <EllipsisVerticalIcon className="w-5 h-5 text-muted-foreground" />
-                        </Button>
                       </div>
 
-                      {/* URL Row */}
+                      <div>
+                        <h3 className="text-lg font-semibold text-foreground truncate leading-5">{e.title ?? displayCat?.name ?? "Account"}</h3>
+                        <span className="text-xs text-primary truncate block">{displayCat?.name ?? e.email}</span>
+                      </div>
+
                       {e.url && (
-                        <div className="flex items-center gap-2 mb-3 ml-16">
+                        <div className="flex items-center gap-2">
                           <svg className="w-4 h-4 text-primary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.1m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                           </svg>
-                          <a 
-                            href={e.url} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="text-sm text-primary hover:underline truncate flex-1 min-w-0"
-                          >
+                          <a href={e.url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline truncate flex-1 min-w-0" onClick={(ev) => ev.stopPropagation()}>
                             {e.url}
                           </a>
                           <svg className="w-4 h-4 text-muted-foreground shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -819,49 +775,64 @@ export function SpaceClient({
                         </div>
                       )}
 
-                      {/* Password Row */}
-                      <div className="flex items-center gap-3 mb-3 ml-16">
-                        <svg className="w-4 h-4 text-muted-foreground shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                        </svg>
-                        <code className="font-mono text-sm text-foreground flex-1 tracking-wide">
-                          {showPasswords[e.id] ? e.password : "••••••••••"}
-                        </code>
-                        <div className="flex gap-2 shrink-0">
-                          <button
-                            onClick={() => setShowPasswords((p) => ({ ...p, [e.id]: !p[e.id] }))}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-muted/50 hover:bg-muted text-foreground text-sm transition-colors"
-                          >
-                            {showPasswords[e.id] ? <EyeSlashIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
-                            Show
-                          </button>
-                          <button
-                            onClick={() => navigator.clipboard.writeText(e.password)}
-                            className="px-4 py-1.5 rounded-lg bg-primary hover:bg-primary-hover text-primary-foreground font-medium text-sm transition-colors"
-                          >
-                            Copy
-                          </button>
-                        </div>
+                      <div className="relative w-full" onClick={(ev) => ev.stopPropagation()}>
+                        {copiedId === e.id && (
+                          <span className="absolute -top-7 right-0 z-10 text-xs font-medium bg-foreground text-background px-2 py-1 rounded-md shadow-sm pointer-events-none">Copied</span>
+                        )}
+                        <InputGroup fullWidth>
+                          <InputGroup.Input readOnly value={showPasswords[e.id] ? e.password : "••••••••••"} aria-label="Password" className="w-full font-mono text-sm" />
+                          <InputGroup.Suffix className="pe-0">
+                            <Button isIconOnly size="sm" variant="ghost" aria-label={showPasswords[e.id] ? "Hide password" : "Show password"} onPress={() => setShowPasswords((p) => ({ ...p, [e.id]: !p[e.id] }))} className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                              {showPasswords[e.id] ? <EyeSlashIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
+                            </Button>
+                            <Button
+                              isIconOnly
+                              size="sm"
+                              variant="ghost"
+                              aria-label={copiedId === e.id ? "Copied" : "Copy password"}
+                              onPress={async () => {
+                                await navigator.clipboard.writeText(e.password);
+                                setCopiedId(e.id);
+                                window.setTimeout(() => setCopiedId((cur) => (cur === e.id ? null : cur)), 1500);
+                              }}
+                              className={`h-8 w-8 ${copiedId === e.id ? "text-success" : "text-muted-foreground hover:text-foreground"}`}
+                            >
+                              {copiedId === e.id ? <CheckIcon className="w-4 h-4" /> : <ClipboardDocumentIcon className="w-4 h-4" />}
+                            </Button>
+                          </InputGroup.Suffix>
+                        </InputGroup>
                       </div>
 
-                      {/* Note Section */}
-                      <div className="ml-16 pt-2 border-t border-border">
-                        <div className="flex items-start gap-2">
-                          <svg className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="flex gap-6 flex-wrap items-center justify-between">
+                        <p className="text-xs text-muted-foreground line-clamp-2 max-w-[60%] flex items-center gap-1.5">
+                          <svg className="w-3.5 h-3.5 shrink-0 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
                           </svg>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium text-muted-foreground mb-1">Note</p>
-                            <p className="text-sm text-muted-foreground leading-relaxed break-words">
-                              {e.description?.trim() || "no description"}
-                            </p>
-                          </div>
+                          <span className="line-clamp-2">{e.description?.trim() ? e.description : "no description"}</span>
+                        </p>
+                        <div className="flex items-end justify-end flex-col text-[11px] text-muted-foreground">
+                          <span className="truncate max-w-[140px]">{e.email}</span>
+                          <span>updated {timeAgo(e.updatedAt)}</span>
                         </div>
                       </div>
-                    </div>
-                  </div>
+                    </Card.Content>
+                  </Card>
                   );
                   })}
+                  <Card
+                    className="border-2 border-dashed border-border bg-muted/20 hover:border-border-strong hover:bg-muted/30 transition-colors cursor-pointer shadow-none rounded-2xl flex flex-col justify-center min-h-[180px] h-full"
+                    onClick={() => { setEditing(null); setIsAddOpen(true); }}
+                  >
+                    <Card.Content className="flex flex-col items-center justify-center text-center p-6 py-8">
+                      <div className="w-12 h-12 rounded-xl bg-muted border border-border flex items-center justify-center mb-3">
+                        <svg className="w-6 h-6 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                      </div>
+                      <p className="text-sm font-semibold text-foreground mb-1">Create a new account</p>
+                      <p className="text-sm text-muted-foreground">Add credentials to this space.</p>
+                    </Card.Content>
+                  </Card>
                 </div>
                 )}
 
@@ -884,11 +855,13 @@ export function SpaceClient({
                       className="text-left px-3 py-2 text-sm rounded-lg hover:bg-muted text-foreground flex items-center gap-2"
                       onClick={async () => {
                         await navigator.clipboard.writeText(entryCtxEntry.password);
+                        setCopiedId(entryCtxEntry.id);
+                        window.setTimeout(() => setCopiedId((cur) => (cur === entryCtxEntry.id ? null : cur)), 1500);
                         setEntryCtx(null);
                       }}
                     >
-                      <ClipboardDocumentIcon className="w-4 h-4" />
-                      Copy password
+                      {copiedId === entryCtxEntry.id ? <CheckIcon className="w-4 h-4 text-success" /> : <ClipboardDocumentIcon className="w-4 h-4" />}
+                      {copiedId === entryCtxEntry.id ? "Copied" : "Copy password"}
                     </button>
                     <button
                       className="text-left px-3 py-2 text-sm rounded-lg hover:bg-muted text-foreground flex items-center gap-2"
@@ -906,31 +879,8 @@ export function SpaceClient({
                     </button>
                   </div>
                 )}
-              </div>
-            )}
-          </Card.Content>
-        </Card>
-
-        {space.description ? (
-          <Card className="border border-border bg-card">
-            <Card.Content className="p-5">
-              <div className="flex items-start gap-3">
-                <DocumentTextIcon className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-foreground mb-1">Space note</p>
-                  <p className="text-sm leading-6 text-muted-foreground">{space.description}</p>
-                </div>
-              </div>
-            </Card.Content>
-          </Card>
-        ) : (
-          <Card className="border border-dashed border-border bg-muted/20">
-            <Card.Content className="p-5">
-              <p className="text-sm text-muted-foreground italic">no description</p>
-            </Card.Content>
-          </Card>
-        )}
-      </div>
+            </>
+          )}
 
       {isAddOpen && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-foreground/40 backdrop-blur-[2px] overflow-y-auto" onClick={() => { setIsAddOpen(false); setEditing(null); }} role="dialog" aria-modal="true">
@@ -941,8 +891,9 @@ export function SpaceClient({
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </Button>
             </div>
-            <form key={editing?.id ?? "new"} action={async (fd) => {
+            <form noValidate key={editing?.id ?? "new"} action={async (fd) => {
                 setEntryFormError(null);
+                setFieldErrors({});
                 try {
                   // inject category fields from state (reference from spaces) — now with dedicated brand logos
                   if (editing) {
@@ -986,7 +937,14 @@ export function SpaceClient({
                       spaceId: space.id,
                     };
                     const parsed = updateEntrySchema.safeParse(toCheck);
-                    if (!parsed.success) { setEntryFormError(parsed.error?.issues?.[0]?.message || "Validation failed"); return; }
+                    if (!parsed.success) {
+                      const map: Record<string, string> = {};
+                      for (const iss of (parsed.error as any).issues as Array<{ path: string; message: string }>) {
+                        if (!map[iss.path]) map[iss.path] = iss.message;
+                      }
+                      setFieldErrors(map);
+                      return;
+                    }
                     await updateEntry(fd);
                   } else {
                     if (createCatKey === "none") {
@@ -1021,21 +979,39 @@ export function SpaceClient({
                       logoUrl: String(fd.get("logoUrl") || "").trim() || null,
                     };
                     const parsed = entrySchema.safeParse(toCheck);
-                    if (!parsed.success) { setEntryFormError(parsed.error?.issues?.[0]?.message || "Validation failed"); return; }
+                    if (!parsed.success) {
+                      const map: Record<string, string> = {};
+                      for (const iss of (parsed.error as any).issues as Array<{ path: string; message: string }>) {
+                        if (!map[iss.path]) map[iss.path] = iss.message;
+                      }
+                      setFieldErrors(map);
+                      return;
+                    }
                     await createEntry(fd);
                   }
                   setIsAddOpen(false); setEditing(null);
+                  setFieldErrors({});
                 } catch (e) {
-                  setEntryFormError(e instanceof Error ? e.message : "Validation failed");
+                  const msg = e instanceof Error ? e.message : "Validation failed";
+                  const lower = msg.toLowerCase();
+                  const map: Record<string, string> = {};
+                  if (lower.includes("title")) map.title = msg;
+                  else if (lower.includes("login") || lower.includes("username") || lower.includes("email")) map.email = msg;
+                  else if (lower.includes("password")) map.password = msg;
+                  else if (lower.includes("url")) map.url = msg;
+                  else if (lower.includes("description") || lower.includes("note")) map.description = msg;
+                  else if (lower.includes("category")) map.category = msg;
+                  else map.email = msg;
+                  setFieldErrors(map);
                   return;
                 }
               }} className="flex flex-col flex-1 min-h-0">
               <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 sm:py-6 space-y-4 overscroll-contain">
-                {entryFormError && <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">{entryFormError}</p>}
                 <input type="hidden" name="spaceId" value={space.id} />
-                <TextField name="title" className="w-full">
+                <TextField name="title" defaultValue={editing?.title ?? ""} isInvalid={!!fieldErrors.title} validationBehavior="aria" className="w-full">
                   <Label className="text-sm font-medium text-foreground mb-2">Title <span className="text-muted-foreground font-normal">(unique)</span></Label>
-                  <Input defaultValue={editing?.title ?? ""} placeholder="e.g. Gmail, AWS root" className="h-10" />
+                  <Input placeholder="e.g. Gmail, AWS root" className="h-10" />
+                  {fieldErrors.title && <FieldError>{fieldErrors.title}</FieldError>}
                 </TextField>
 
                 {/* Category — like Spaces icon/color picker */}
@@ -1116,7 +1092,7 @@ export function SpaceClient({
                               key={c}
                               type="button"
                               onClick={() => (editing ? setEditCatColor(c) : setCreateCatColor(c))}
-                              className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${active ? "border-foreground scale-110" : "border-white dark:border-border"}`}
+                              className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${active ? "border-foreground scale-110" : "border-card"}`}
                               style={{ backgroundColor: c }}
                               aria-label={`Color ${c}`}
                             >
@@ -1141,21 +1117,25 @@ export function SpaceClient({
                   </>
                 )}
 
-                <TextField name="email" isRequired className="w-full">
+                <TextField name="email" isRequired defaultValue={editing?.email ?? ""} isInvalid={!!fieldErrors.email} validationBehavior="aria" className="w-full">
                   <Label className="text-sm font-medium text-foreground mb-2">Account / Username</Label>
-                  <Input defaultValue={editing?.email ?? ""} placeholder="username, email or account name" className="h-10" />
+                  <Input placeholder="username, email or account name" className="h-10" />
+                  {fieldErrors.email && <FieldError>{fieldErrors.email}</FieldError>}
                 </TextField>
-                <TextField name="password" isRequired={!editing} type="password" className="w-full">
+                <TextField name="password" isRequired={!editing} type="password" isInvalid={!!fieldErrors.password} validationBehavior="aria" className="w-full">
                   <Label className="text-sm font-medium text-foreground mb-2">Password {editing && <span className="text-muted-foreground font-normal">(leave blank to keep)</span>}</Label>
                   <Input placeholder={editing ? "•••••••• (unchanged)" : "••••••••"} type="password" className="h-10" />
+                  {fieldErrors.password && <FieldError>{fieldErrors.password}</FieldError>}
                 </TextField>
-                <TextField name="url" type="url" className="w-full">
+                <TextField name="url" type="url" defaultValue={editing?.url ?? ""} isInvalid={!!fieldErrors.url} validationBehavior="aria" className="w-full">
                   <Label className="text-sm font-medium text-foreground mb-2">URL (optional)</Label>
-                  <Input defaultValue={editing?.url ?? ""} placeholder="https://..." type="url" className="h-10" />
+                  <Input placeholder="https://..." type="url" className="h-10" />
+                  {fieldErrors.url && <FieldError>{fieldErrors.url}</FieldError>}
                 </TextField>
-                <TextField name="description" className="w-full">
+                <TextField name="description" defaultValue={editing?.description ?? ""} isInvalid={!!fieldErrors.description} validationBehavior="aria" className="w-full">
                   <Label className="text-sm font-medium text-foreground mb-2">Description</Label>
-                  <TextArea defaultValue={editing?.description ?? ""} placeholder="Notes, recovery codes, 2FA hints…" rows={3} />
+                  <TextArea placeholder="Notes, recovery codes, 2FA hints…" rows={3} />
+                  {fieldErrors.description && <FieldError>{fieldErrors.description}</FieldError>}
                 </TextField>
               </div>
               <div className="flex gap-3 p-4 sm:p-6 pt-4 border-t border-border shrink-0 bg-card">

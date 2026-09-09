@@ -22,9 +22,9 @@
 
 ## Start
 
-- `pnpm install` then `pnpm prisma generate` + `pnpm prisma migrate dev`
+- `pnpm install` (runs `prisma generate` via `postinstall`) then `pnpm db:migrate:dev --name <name>` (dev) / `pnpm db:migrate:deploy` (prod)
 - `pnpm dev` → http://localhost:3000
-- Build gate: `pnpm build` must pass before handoff.
+- Build gate: `pnpm build` (`prisma generate && next build`) must pass before handoff.
 
 ## Exit
 

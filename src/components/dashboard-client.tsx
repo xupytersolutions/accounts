@@ -22,7 +22,8 @@ import {
   DevicePhoneMobileIcon,
 } from "@heroicons/react/24/solid";
 import { EllipsisVerticalIcon, PencilSquareIcon, TrashIcon, ArrowTopRightOnSquareIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
-import { Card, Button, Chip, TextField, Input, TextArea, Select, ListBox, Label, Dropdown } from "@heroui/react";
+import { Card, Button, Chip, TextField, Input, TextArea, Select, ListBox, Label, Dropdown, FieldError } from "@heroui/react";
+import { spaceSchema } from "@/lib/validators";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/ui/page-header";
@@ -102,6 +103,8 @@ export function DashboardClient({ spaces, createSpace, deleteSpace, updateSpace 
   const [createIcon, setCreateIcon] = useState<string>("");
   const [editColor, setEditColor] = useState<string>(SPACE_COLORS[0]);
   const [editIcon, setEditIcon] = useState<string>("");
+  const [createFieldErrors, setCreateFieldErrors] = useState<Record<string, string>>({});
+  const [editFieldErrors, setEditFieldErrors] = useState<Record<string, string>>({});
 
   // derived filtered & sorted list — scalable filter pane can add more criteria here
   const filteredSpaces = spaces
@@ -133,6 +136,9 @@ export function DashboardClient({ spaces, createSpace, deleteSpace, updateSpace 
     if (editingSpace) {
       setEditColor(editingSpace.color || SPACE_COLORS[0]);
       setEditIcon(editingSpace.icon || "");
+      setEditFieldErrors({});
+    } else {
+      setEditFieldErrors({});
     }
   }, [editingSpace]);
 
@@ -140,6 +146,9 @@ export function DashboardClient({ spaces, createSpace, deleteSpace, updateSpace 
     if (isCreateModalOpen) {
       setCreateColor(SPACE_COLORS[0]);
       setCreateIcon("");
+      setCreateFieldErrors({});
+    } else {
+      setCreateFieldErrors({});
     }
   }, [isCreateModalOpen]);
 
@@ -490,19 +499,46 @@ export function DashboardClient({ spaces, createSpace, deleteSpace, updateSpace 
               </Button>
             </div>
 
-            <form action={async (fd) => {
-              await createSpace(fd);
-              setIsCreateModalOpen(false);
+            <form noValidate action={async (fd) => {
+              setCreateFieldErrors({});
+              const toCheck = {
+                name: String(fd.get("name") || "").trim(),
+                type: String(fd.get("type") || "personal"),
+                description: String(fd.get("description") || "").trim() || null,
+                color: String(fd.get("color") || "").trim() || null,
+                icon: String(fd.get("icon") || "").trim() || null,
+              };
+              const parsed = spaceSchema.safeParse(toCheck);
+              if (!parsed.success) {
+                const map: Record<string, string> = {};
+                for (const iss of (parsed.error as any).issues as Array<{ path: string; message: string }>) {
+                  if (!map[iss.path]) map[iss.path] = iss.message;
+                }
+                setCreateFieldErrors(map);
+                return;
+              }
+              try {
+                await createSpace(fd);
+                setIsCreateModalOpen(false);
+                setCreateFieldErrors({});
+              } catch (e) {
+                const msg = e instanceof Error ? e.message : "Failed to create space";
+                const lower = msg.toLowerCase();
+                if (lower.includes("name")) setCreateFieldErrors({ name: msg });
+                else if (lower.includes("description")) setCreateFieldErrors({ description: msg });
+                else setCreateFieldErrors({ name: msg });
+              }
             }} className="flex flex-col flex-1 min-h-0">
               <input type="hidden" name="color" value={createColor} />
               <input type="hidden" name="icon" value={createIcon} />
               <div className="flex-1 overflow-y-auto p-6 space-y-4 overscroll-contain">
-                <TextField name="name" isRequired className="w-full">
+                <TextField name="name" isRequired isInvalid={!!createFieldErrors.name} validationBehavior="aria" className="w-full">
                   <Label className="text-sm font-medium text-foreground mb-2">Space name</Label>
                   <Input
                     placeholder="e.g. Client XYZ"
                     className="h-10"
                   />
+                  {createFieldErrors.name && <FieldError>{createFieldErrors.name}</FieldError>}
                 </TextField>
 
                 <Select name="type" defaultSelectedKey="personal" className="w-full">
@@ -561,12 +597,13 @@ export function DashboardClient({ spaces, createSpace, deleteSpace, updateSpace 
                   </div>
                 </div>
 
-                <TextField name="description" className="w-full">
+                <TextField name="description" isInvalid={!!createFieldErrors.description} validationBehavior="aria" className="w-full">
                   <Label className="text-sm font-medium text-foreground mb-2">Description</Label>
                   <TextArea
                     placeholder="Optional note about this space..."
                     rows={3}
                   />
+                  {createFieldErrors.description && <FieldError>{createFieldErrors.description}</FieldError>}
                 </TextField>
               </div>
 
@@ -610,20 +647,47 @@ export function DashboardClient({ spaces, createSpace, deleteSpace, updateSpace 
               </Button>
             </div>
 
-            <form key={editingSpace.id} action={async (fd) => {
-              await updateSpace(fd);
-              setEditingSpace(null);
+            <form noValidate key={editingSpace.id} action={async (fd) => {
+              setEditFieldErrors({});
+              const toCheck = {
+                name: String(fd.get("name") || "").trim(),
+                type: String(fd.get("type") || "personal"),
+                description: String(fd.get("description") || "").trim() || null,
+                color: String(fd.get("color") || "").trim() || null,
+                icon: String(fd.get("icon") || "").trim() || null,
+              };
+              const parsed = spaceSchema.safeParse(toCheck);
+              if (!parsed.success) {
+                const map: Record<string, string> = {};
+                for (const iss of (parsed.error as any).issues as Array<{ path: string; message: string }>) {
+                  if (!map[iss.path]) map[iss.path] = iss.message;
+                }
+                setEditFieldErrors(map);
+                return;
+              }
+              try {
+                await updateSpace(fd);
+                setEditingSpace(null);
+                setEditFieldErrors({});
+              } catch (e) {
+                const msg = e instanceof Error ? e.message : "Failed to update space";
+                const lower = msg.toLowerCase();
+                if (lower.includes("name")) setEditFieldErrors({ name: msg });
+                else if (lower.includes("description")) setEditFieldErrors({ description: msg });
+                else setEditFieldErrors({ name: msg });
+              }
             }} className="flex flex-col flex-1 min-h-0">
               <input type="hidden" name="spaceId" value={editingSpace.id} />
               <input type="hidden" name="color" value={editColor} />
               <input type="hidden" name="icon" value={editIcon} />
               <div className="flex-1 overflow-y-auto p-6 space-y-4 overscroll-contain">
-                <TextField name="name" isRequired className="w-full" defaultValue={editingSpace.name}>
+                <TextField name="name" isRequired isInvalid={!!editFieldErrors.name} validationBehavior="aria" className="w-full" defaultValue={editingSpace.name}>
                   <Label className="text-sm font-medium text-foreground mb-2">Space name</Label>
                   <Input
                     placeholder="e.g. Client XYZ"
                     className="h-10"
                   />
+                  {editFieldErrors.name && <FieldError>{editFieldErrors.name}</FieldError>}
                 </TextField>
 
                 <Select name="type" defaultSelectedKey={editingSpace.type} className="w-full">
@@ -682,12 +746,13 @@ export function DashboardClient({ spaces, createSpace, deleteSpace, updateSpace 
                   </div>
                 </div>
 
-                <TextField name="description" className="w-full" defaultValue={editingSpace.description ?? ""}>
+                <TextField name="description" isInvalid={!!editFieldErrors.description} validationBehavior="aria" className="w-full" defaultValue={editingSpace.description ?? ""}>
                   <Label className="text-sm font-medium text-foreground mb-2">Description</Label>
                   <TextArea
                     placeholder="Optional note about this space..."
                     rows={3}
                   />
+                  {editFieldErrors.description && <FieldError>{editFieldErrors.description}</FieldError>}
                 </TextField>
               </div>
 

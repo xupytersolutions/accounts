@@ -30,6 +30,16 @@
   --color-destructive: oklch(0.58 0.22 27);
   --color-destructive-foreground: oklch(0.98 0 0);
 
+  /* Palette — single source for space/category pickers (no hex in components) */
+  --color-palette-1: #006FEE;
+  --color-palette-2: #17C964;
+  --color-palette-3: #F5A524;
+  --color-palette-4: #F31260;
+  --color-palette-5: #7828C8;
+  --color-palette-6: #06B7DB;
+  --color-palette-7: #FF6900;
+  --color-palette-8: #9353D3;
+
   /* HeroUI compat — map to same tokens so Dropdown/Select/ListBox inherit */
   --color-default: var(--color-muted);
   --color-content1: var(--color-card);
