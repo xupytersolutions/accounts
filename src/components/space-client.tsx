@@ -108,7 +108,7 @@ function parseImportTxt(text: string): ImportRow[] {
           category: String(o.category ?? o.cat ?? "").trim(),
         }))
         .filter((r) => r.email || r.password || r.title);
-    } catch {}
+    } catch { }
   }
   const rows = splitCsvRows(raw);
   if (rows.length === 0) return [];
@@ -353,11 +353,11 @@ export function SpaceClient({
     return () => document.removeEventListener("mousedown", onClick);
   }, [filterOpen]);
   useEffect(() => {
-    const v = localStorage.getItem("vaulta:accountsView") as ViewMode | null;
+    const v = localStorage.getItem("one-account:accountsView") as ViewMode | null;
     if (v === "compact" || v === "comfortable") setViewMode(v);
   }, []);
   useEffect(() => {
-    localStorage.setItem("vaulta:accountsView", viewMode);
+    localStorage.setItem("one-account:accountsView", viewMode);
   }, [viewMode]);
 
   // generator → add to space: auto-open create modal with prefilled password + title autofocus
@@ -366,9 +366,9 @@ export function SpaceClient({
     let pwd = searchParams.get("password");
     if (!pwd) {
       try {
-        const stored = sessionStorage.getItem("vaulta:genPassword");
+        const stored = sessionStorage.getItem("one-account:genPassword");
         if (stored) pwd = stored;
-      } catch {}
+      } catch { }
     }
     if (create) {
       if (pwd !== null && pwd !== "") setGenPassword(pwd);
@@ -383,8 +383,8 @@ export function SpaceClient({
       router.replace(qs ? `${window.location.pathname}?${qs}` : window.location.pathname);
       try {
         // keep for this modal session, clear after read to avoid reuse
-        if (pwd) sessionStorage.removeItem("vaulta:genPassword");
-      } catch {}
+        if (pwd) sessionStorage.removeItem("one-account:genPassword");
+      } catch { }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
@@ -665,57 +665,57 @@ export function SpaceClient({
               <span className="hidden sm:inline">Filters</span>
               {activeFilterCount > 0 && <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold">{activeFilterCount}</span>}
             </Button>
-          {filterOpen && (
-            <div
-              id="filter-pane-accounts"
-              data-filter-pane
-              className="absolute right-0 top-full mt-2 w-[320px] max-w-[min(320px,calc(100vw-2rem))] bg-popover border border-border shadow-sm rounded-xl p-4 z-20 flex flex-col gap-4"
-            >
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-semibold text-foreground">Filters</h4>
-                {activeFilterCount > 0 && (
-                  <button onClick={() => { setCategoryFilter("all"); setSortBy("updated"); setSearch(""); }} className="text-xs text-primary hover:underline">Clear all</button>
-                )}
-              </div>
+            {filterOpen && (
+              <div
+                id="filter-pane-accounts"
+                data-filter-pane
+                className="absolute right-0 top-full mt-2 w-[320px] max-w-[min(320px,calc(100vw-2rem))] bg-popover border border-border shadow-sm rounded-xl p-4 z-20 flex flex-col gap-4"
+              >
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-semibold text-foreground">Filters</h4>
+                  {activeFilterCount > 0 && (
+                    <button onClick={() => { setCategoryFilter("all"); setSortBy("updated"); setSearch(""); }} className="text-xs text-primary hover:underline">Clear all</button>
+                  )}
+                </div>
 
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">Category</Label>
-                <Select selectedKey={categoryFilter} onSelectionChange={(k) => setCategoryFilter(String(k))} className="w-full">
-                  <Select.Trigger>
-                    <Select.Value />
-                  </Select.Trigger>
-                  <Select.Popover className="bg-popover border border-border shadow-sm">
-                    <ListBox className="p-1">
-                      <ListBox.Item id="all" className="text-popover-foreground data-[focused]:bg-muted">All categories</ListBox.Item>
-                      <ListBox.Item id="none" className="text-popover-foreground data-[focused]:bg-muted">No category</ListBox.Item>
-                      {allCategories.map((c) => (
-                        <ListBox.Item key={c.id} id={c.id} textValue={c.name} className="text-popover-foreground data-[focused]:bg-muted">{c.name}</ListBox.Item>
-                      ))}
-                    </ListBox>
-                  </Select.Popover>
-                </Select>
-              </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground">Category</Label>
+                  <Select selectedKey={categoryFilter} onSelectionChange={(k) => setCategoryFilter(String(k))} className="w-full">
+                    <Select.Trigger>
+                      <Select.Value />
+                    </Select.Trigger>
+                    <Select.Popover className="bg-popover border border-border shadow-sm">
+                      <ListBox className="p-1">
+                        <ListBox.Item id="all" className="text-popover-foreground data-[focused]:bg-muted">All categories</ListBox.Item>
+                        <ListBox.Item id="none" className="text-popover-foreground data-[focused]:bg-muted">No category</ListBox.Item>
+                        {allCategories.map((c) => (
+                          <ListBox.Item key={c.id} id={c.id} textValue={c.name} className="text-popover-foreground data-[focused]:bg-muted">{c.name}</ListBox.Item>
+                        ))}
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
+                </div>
 
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">Sort by</Label>
-                <Select selectedKey={sortBy} onSelectionChange={(k) => setSortBy(String(k))} className="w-full">
-                  <Select.Trigger>
-                    <Select.Value />
-                  </Select.Trigger>
-                  <Select.Popover className="bg-popover border border-border shadow-sm">
-                    <ListBox className="p-1">
-                      <ListBox.Item id="updated" className="text-popover-foreground data-[focused]:bg-muted">Last updated</ListBox.Item>
-                      <ListBox.Item id="title" className="text-popover-foreground data-[focused]:bg-muted">Title</ListBox.Item>
-                      <ListBox.Item id="email" className="text-popover-foreground data-[focused]:bg-muted">Login</ListBox.Item>
-                      <ListBox.Item id="category" className="text-popover-foreground data-[focused]:bg-muted">Category</ListBox.Item>
-                    </ListBox>
-                  </Select.Popover>
-                </Select>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground">Sort by</Label>
+                  <Select selectedKey={sortBy} onSelectionChange={(k) => setSortBy(String(k))} className="w-full">
+                    <Select.Trigger>
+                      <Select.Value />
+                    </Select.Trigger>
+                    <Select.Popover className="bg-popover border border-border shadow-sm">
+                      <ListBox className="p-1">
+                        <ListBox.Item id="updated" className="text-popover-foreground data-[focused]:bg-muted">Last updated</ListBox.Item>
+                        <ListBox.Item id="title" className="text-popover-foreground data-[focused]:bg-muted">Title</ListBox.Item>
+                        <ListBox.Item id="email" className="text-popover-foreground data-[focused]:bg-muted">Login</ListBox.Item>
+                        <ListBox.Item id="category" className="text-popover-foreground data-[focused]:bg-muted">Category</ListBox.Item>
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
-      </div>
       </div>
 
       {space.entries.length === 0 ? (
@@ -752,139 +752,139 @@ export function SpaceClient({
             <span className="text-sm text-muted-foreground ml-auto">{selected.size} selected{filteredEntries.length !== space.entries.length ? ` • ${filteredEntries.length} shown` : ""}</span>
           </div>
 
-                {filteredEntries.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 border border-dashed border-border rounded-xl bg-muted/20">
-                    <p className="text-sm font-medium text-foreground mb-1">No matches</p>
-                    <p className="text-sm text-muted-foreground mb-4">Try adjusting search or filters.</p>
-                    <Button variant="tertiary" onPress={() => { setSearch(""); setCategoryFilter("all"); setSortBy("updated"); }}>Clear filters</Button>
-                  </div>
-                ) : (
-                <div className={`grid mb-8 ${viewMode === "compact" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"}`}>{filteredEntries.map((e) => {
-                  const displayCat: Category | { name: string; icon: string | null; color: string | null; logoUrl: string | null } | null =
-                    (e as unknown as { categoryRef?: Category | null }).categoryRef ?? (e.category ? { name: e.category, icon: e.icon, color: e.color, logoUrl: (e as unknown as { logoUrl?: string | null }).logoUrl ?? null } : null);
-                  const catColor = displayCat?.color || CATEGORY_COLORS[0];
-                  const catIcon = displayCat?.icon || null;
-                  const catLogo = (displayCat as unknown as { logoUrl?: string | null })?.logoUrl || null;
-                  const isCompact = viewMode === "compact";
-                  return (
-                  <Card
-                    key={e.id}
-                    className="w-full shadow-none hover:scale-[1.02] duration-300 transition-transform rounded-2xl group cursor-pointer"
-                    onContextMenu={(e2) => { e2.preventDefault(); setEntryCtx({ id: e.id, x: e2.clientX, y: e2.clientY }); }}
-                  >
-                    <Card.Content className={isCompact ? "px-2.5 py-1.5 flex flex-col gap-1.5" : "p-2 flex flex-col gap-3"}>
-                      {isCompact ? (
-                        <>
-                          <div className="flex items-center gap-2">
-                            <Checkbox isSelected={selected.has(e.id)} onChange={() => toggleSelect(e.id)} aria-label="Select account" className="shrink-0" onClick={(ev) => ev.stopPropagation()}><Checkbox.Content><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control></Checkbox.Content></Checkbox>
-                            <div className="flex-1 min-w-0">
-                              <h3 className="text-sm font-semibold text-foreground truncate leading-tight">{e.title ?? displayCat?.name ?? "Account"}</h3>
-                              <span className="text-xs text-muted-foreground truncate block">{e.email}</span>
+          {filteredEntries.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 border border-dashed border-border rounded-xl bg-muted/20">
+              <p className="text-sm font-medium text-foreground mb-1">No matches</p>
+              <p className="text-sm text-muted-foreground mb-4">Try adjusting search or filters.</p>
+              <Button variant="tertiary" onPress={() => { setSearch(""); setCategoryFilter("all"); setSortBy("updated"); }}>Clear filters</Button>
+            </div>
+          ) : (
+            <div className={`grid mb-8 ${viewMode === "compact" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"}`}>{filteredEntries.map((e) => {
+              const displayCat: Category | { name: string; icon: string | null; color: string | null; logoUrl: string | null } | null =
+                (e as unknown as { categoryRef?: Category | null }).categoryRef ?? (e.category ? { name: e.category, icon: e.icon, color: e.color, logoUrl: (e as unknown as { logoUrl?: string | null }).logoUrl ?? null } : null);
+              const catColor = displayCat?.color || CATEGORY_COLORS[0];
+              const catIcon = displayCat?.icon || null;
+              const catLogo = (displayCat as unknown as { logoUrl?: string | null })?.logoUrl || null;
+              const isCompact = viewMode === "compact";
+              return (
+                <Card
+                  key={e.id}
+                  className="w-full shadow-none hover:scale-[1.02] duration-300 transition-transform rounded-2xl group cursor-pointer"
+                  onContextMenu={(e2) => { e2.preventDefault(); setEntryCtx({ id: e.id, x: e2.clientX, y: e2.clientY }); }}
+                >
+                  <Card.Content className={isCompact ? "px-2.5 py-1.5 flex flex-col gap-1.5" : "p-2 flex flex-col gap-3"}>
+                    {isCompact ? (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <Checkbox isSelected={selected.has(e.id)} onChange={() => toggleSelect(e.id)} aria-label="Select account" className="shrink-0" variant="secondary" onClick={(ev) => ev.stopPropagation()}><Checkbox.Content><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control></Checkbox.Content></Checkbox>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-sm font-semibold text-foreground truncate leading-tight">{e.title ?? displayCat?.name ?? "Account"}</h3>
+                            <span className="text-xs text-muted-foreground truncate block">{e.email}</span>
+                          </div>
+                          <Button isIconOnly variant="tertiary" size="sm" aria-label="Account menu" className="h-7 w-7 shrink-0" onPress={(ev: unknown) => {
+                            const anyEv = ev as { target?: Element; currentTarget?: Element }; const raw = (anyEv?.currentTarget ?? anyEv?.target) as HTMLElement | undefined; const target = (raw?.closest?.("button") as HTMLElement | null) ?? raw ?? null;
+                            if (!target?.getBoundingClientRect) { setEntryCtx((prev) => (prev?.id === e.id ? null : { id: e.id, x: window.innerWidth / 2, y: window.innerHeight / 2 })); return; }
+                            const r = target.getBoundingClientRect(); const x = Math.min(r.right - 160, window.innerWidth - 180); const y = r.bottom + 8; setEntryCtx((prev) => (prev?.id === e.id ? null : { id: e.id, x, y }));
+                          }}><EllipsisVerticalIcon className="w-4 h-4 text-muted-foreground" /></Button>
+                        </div>
+                        <div className="relative w-full" onClick={(ev) => ev.stopPropagation()}>
+                          {copiedId === e.id && <span className="absolute -top-7 right-0 z-10 text-xs font-medium bg-foreground text-background px-2 py-1 rounded-md shadow-sm pointer-events-none">Copied</span>}
+                          <InputGroup fullWidth>
+                            <InputGroup.Input readOnly value={showPasswords[e.id] ? e.password : "••••••••••"} aria-label="Password" className="w-full font-mono text-sm" />
+                            <InputGroup.Suffix className="pe-0">
+                              <Button isIconOnly size="sm" variant="ghost" aria-label={showPasswords[e.id] ? "Hide password" : "Show password"} onPress={() => setShowPasswords((p) => ({ ...p, [e.id]: !p[e.id] }))} className="h-8 w-8 text-muted-foreground hover:text-foreground">{showPasswords[e.id] ? <EyeSlashIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}</Button>
+                              <Button isIconOnly size="sm" variant="ghost" aria-label={copiedId === e.id ? "Copied" : "Copy password"} onPress={async () => { await navigator.clipboard.writeText(e.password); setCopiedId(e.id); window.setTimeout(() => setCopiedId((cur) => (cur === e.id ? null : cur)), 1500); }} className={`h-8 w-8 ${copiedId === e.id ? "text-success" : "text-muted-foreground hover:text-foreground"}`}>{copiedId === e.id ? <CheckIcon className="w-4 h-4" /> : <ClipboardDocumentIcon className="w-4 h-4" />}</Button>
+                            </InputGroup.Suffix>
+                          </InputGroup>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-2" onClick={(ev) => ev.stopPropagation()}>
+                            <Checkbox isSelected={selected.has(e.id)} onChange={() => toggleSelect(e.id)} aria-label="Select account" className="shrink-0"><Checkbox.Content><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control></Checkbox.Content></Checkbox>
+                            <div className="w-10 h-10 rounded-md flex items-center justify-center shrink-0 text-white" style={{ backgroundColor: catColor }}>
+                              {catLogo ? <img src={catLogo} alt={displayCat!.name} className="w-5 h-5 object-contain" onError={(ev) => { (ev.currentTarget as HTMLImageElement).style.display = "none"; }} /> : catIcon ? <CategoryIcon icon={catIcon} className="w-5 h-5 text-white" /> : <span className="font-bold text-sm">{(e.title ?? e.email).charAt(0).toUpperCase()}</span>}
                             </div>
-                            <Button isIconOnly variant="tertiary" size="sm" aria-label="Account menu" className="h-7 w-7 shrink-0" onPress={(ev: unknown) => {
+                          </div>
+                          <div className="flex items-center gap-1.5" onClick={(ev) => ev.stopPropagation()}>
+                            <Button isIconOnly variant="tertiary" size="sm" aria-label="Account menu" className="opacity-60 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity h-7 w-7 min-w-7" onPress={(ev: unknown) => {
                               const anyEv = ev as { target?: Element; currentTarget?: Element }; const raw = (anyEv?.currentTarget ?? anyEv?.target) as HTMLElement | undefined; const target = (raw?.closest?.("button") as HTMLElement | null) ?? raw ?? null;
                               if (!target?.getBoundingClientRect) { setEntryCtx((prev) => (prev?.id === e.id ? null : { id: e.id, x: window.innerWidth / 2, y: window.innerHeight / 2 })); return; }
                               const r = target.getBoundingClientRect(); const x = Math.min(r.right - 160, window.innerWidth - 180); const y = r.bottom + 8; setEntryCtx((prev) => (prev?.id === e.id ? null : { id: e.id, x, y }));
                             }}><EllipsisVerticalIcon className="w-4 h-4 text-muted-foreground" /></Button>
                           </div>
-                          <div className="relative w-full" onClick={(ev) => ev.stopPropagation()}>
-                            {copiedId === e.id && <span className="absolute -top-7 right-0 z-10 text-xs font-medium bg-foreground text-background px-2 py-1 rounded-md shadow-sm pointer-events-none">Copied</span>}
-                            <InputGroup fullWidth>
-                              <InputGroup.Input readOnly value={showPasswords[e.id] ? e.password : "••••••••••"} aria-label="Password" className="w-full font-mono text-sm" />
-                              <InputGroup.Suffix className="pe-0">
-                                <Button isIconOnly size="sm" variant="ghost" aria-label={showPasswords[e.id] ? "Hide password" : "Show password"} onPress={() => setShowPasswords((p) => ({ ...p, [e.id]: !p[e.id] }))} className="h-8 w-8 text-muted-foreground hover:text-foreground">{showPasswords[e.id] ? <EyeSlashIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}</Button>
-                                <Button isIconOnly size="sm" variant="ghost" aria-label={copiedId === e.id ? "Copied" : "Copy password"} onPress={async () => { await navigator.clipboard.writeText(e.password); setCopiedId(e.id); window.setTimeout(() => setCopiedId((cur) => (cur === e.id ? null : cur)), 1500); }} className={`h-8 w-8 ${copiedId === e.id ? "text-success" : "text-muted-foreground hover:text-foreground"}`}>{copiedId === e.id ? <CheckIcon className="w-4 h-4" /> : <ClipboardDocumentIcon className="w-4 h-4" />}</Button>
-                              </InputGroup.Suffix>
-                            </InputGroup>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-2" onClick={(ev) => ev.stopPropagation()}>
-                              <Checkbox isSelected={selected.has(e.id)} onChange={() => toggleSelect(e.id)} aria-label="Select account" className="shrink-0"><Checkbox.Content><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control></Checkbox.Content></Checkbox>
-                              <div className="w-10 h-10 rounded-md flex items-center justify-center shrink-0 text-white" style={{ backgroundColor: catColor }}>
-                                {catLogo ? <img src={catLogo} alt={displayCat!.name} className="w-5 h-5 object-contain" onError={(ev) => { (ev.currentTarget as HTMLImageElement).style.display = "none"; }} /> : catIcon ? <CategoryIcon icon={catIcon} className="w-5 h-5 text-white" /> : <span className="font-bold text-sm">{(e.title ?? e.email).charAt(0).toUpperCase()}</span>}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-1.5" onClick={(ev) => ev.stopPropagation()}>
-                              <Button isIconOnly variant="tertiary" size="sm" aria-label="Account menu" className="opacity-60 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity h-7 w-7 min-w-7" onPress={(ev: unknown) => {
-                                const anyEv = ev as { target?: Element; currentTarget?: Element }; const raw = (anyEv?.currentTarget ?? anyEv?.target) as HTMLElement | undefined; const target = (raw?.closest?.("button") as HTMLElement | null) ?? raw ?? null;
-                                if (!target?.getBoundingClientRect) { setEntryCtx((prev) => (prev?.id === e.id ? null : { id: e.id, x: window.innerWidth / 2, y: window.innerHeight / 2 })); return; }
-                                const r = target.getBoundingClientRect(); const x = Math.min(r.right - 160, window.innerWidth - 180); const y = r.bottom + 8; setEntryCtx((prev) => (prev?.id === e.id ? null : { id: e.id, x, y }));
-                              }}><EllipsisVerticalIcon className="w-4 h-4 text-muted-foreground" /></Button>
-                            </div>
-                          </div>
-                          <div><h3 className="text-lg font-semibold text-foreground truncate leading-5">{e.title ?? displayCat?.name ?? "Account"}</h3><span className="text-xs text-primary truncate block">{displayCat?.name ?? e.email}</span></div>
-                          {e.url && (<div className="flex items-center gap-2"><svg className="w-4 h-4 text-primary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.1m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg><a href={e.url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline truncate flex-1 min-w-0" onClick={(ev) => ev.stopPropagation()}>{e.url}</a><svg className="w-4 h-4 text-muted-foreground shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg></div>)}
-                          <div className="relative w-full" onClick={(ev) => ev.stopPropagation()}>{copiedId === e.id && <span className="absolute -top-7 right-0 z-10 text-xs font-medium bg-foreground text-background px-2 py-1 rounded-md shadow-sm pointer-events-none">Copied</span>}<InputGroup fullWidth><InputGroup.Input readOnly value={showPasswords[e.id] ? e.password : "••••••••••"} aria-label="Password" className="w-full font-mono text-sm" /><InputGroup.Suffix className="pe-0"><Button isIconOnly size="sm" variant="ghost" aria-label={showPasswords[e.id] ? "Hide password" : "Show password"} onPress={() => setShowPasswords((p) => ({ ...p, [e.id]: !p[e.id] }))} className="h-8 w-8 text-muted-foreground hover:text-foreground">{showPasswords[e.id] ? <EyeSlashIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}</Button><Button isIconOnly size="sm" variant="ghost" aria-label={copiedId === e.id ? "Copied" : "Copy password"} onPress={async () => { await navigator.clipboard.writeText(e.password); setCopiedId(e.id); window.setTimeout(() => setCopiedId((cur) => (cur === e.id ? null : cur)), 1500); }} className={`h-8 w-8 ${copiedId === e.id ? "text-success" : "text-muted-foreground hover:text-foreground"}`}>{copiedId === e.id ? <CheckIcon className="w-4 h-4" /> : <ClipboardDocumentIcon className="w-4 h-4" />}</Button></InputGroup.Suffix></InputGroup></div>
-                          <div className="flex gap-6 flex-wrap items-center justify-between"><p className="text-xs text-muted-foreground line-clamp-2 max-w-[60%] flex items-center gap-1.5"><svg className="w-3.5 h-3.5 shrink-0 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg><span className="line-clamp-2">{e.description?.trim() ? e.description : "no description"}</span></p><div className="flex items-end justify-end flex-col text-[11px] text-muted-foreground"><span className="truncate max-w-[140px]">{e.email}</span><span>updated {timeAgo(e.updatedAt)}</span></div></div>
-                        </>
-                      )}
-                    </Card.Content>
-                  </Card>
-                  );
-                  })}
-                  <Card
-                    className={`border-2 border-dashed border-border bg-muted/20 hover:border-border-strong hover:bg-muted/30 transition-colors cursor-pointer shadow-none rounded-2xl flex flex-col justify-center h-full ${viewMode === "compact" ? "min-h-[52px]" : "min-h-[180px]"}`}
-                    onClick={() => { setEditing(null); setIsAddOpen(true); }}
-                  >
-                    <Card.Content className={`flex flex-col items-center justify-center text-center ${viewMode === "compact" ? "px-2.5 py-1.5" : "p-6 py-8"}`}>
-                      <div className={`${viewMode === "compact" ? "w-6 h-6 mb-1" : "w-12 h-12 mb-3"} rounded-xl bg-muted border border-border flex items-center justify-center`}>
-                        <svg className={`${viewMode === "compact" ? "w-3.5 h-3.5" : "w-6 h-6"} text-muted-foreground`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                      </div>
-                      <p className={`${viewMode === "compact" ? "text-xs" : "text-sm"} font-semibold text-foreground ${viewMode === "compact" ? "" : "mb-1"}`}>Create a new account</p>
-                      {viewMode !== "compact" && <p className="text-sm text-muted-foreground">Add credentials to this space.</p>}
-                    </Card.Content>
-                  </Card>
-                </div>
-                )}
-
-                {/* Entry context menu — same style as space card ctx menu */}
-                {entryCtx && entryCtxEntry && (
-                  <div
-                    data-entry-ctx
-                    className="fixed z-40 min-w-[180px] bg-popover border border-border shadow-sm rounded-xl p-1 flex flex-col"
-                    style={{ left: Math.min(entryCtx.x, typeof window !== "undefined" ? window.innerWidth - 190 : entryCtx.x), top: entryCtx.y }}
-                    onClick={(ev) => ev.stopPropagation()}
-                  >
-                    <button
-                      className="text-left px-3 py-2 text-sm rounded-lg hover:bg-muted text-foreground flex items-center gap-2"
-                      onClick={() => { setEntryCtx(null); setEditing(entryCtxEntry); setIsAddOpen(true); }}
-                    >
-                      <PencilSquareIcon className="w-4 h-4" />
-                      Edit
-                    </button>
-                    <button
-                      className="text-left px-3 py-2 text-sm rounded-lg hover:bg-muted text-foreground flex items-center gap-2"
-                      onClick={async () => {
-                        await navigator.clipboard.writeText(entryCtxEntry.password);
-                        setCopiedId(entryCtxEntry.id);
-                        window.setTimeout(() => setCopiedId((cur) => (cur === entryCtxEntry.id ? null : cur)), 1500);
-                        setEntryCtx(null);
-                      }}
-                    >
-                      {copiedId === entryCtxEntry.id ? <CheckIcon className="w-4 h-4 text-success" /> : <ClipboardDocumentIcon className="w-4 h-4" />}
-                      {copiedId === entryCtxEntry.id ? "Copied" : "Copy password"}
-                    </button>
-                    <button
-                      className="text-left px-3 py-2 text-sm rounded-lg hover:bg-muted text-foreground flex items-center gap-2"
-                      onClick={() => { setEntryCtx(null); setTransferOpen({ ids: [entryCtx.id] }); }}
-                    >
-                      <ArrowsRightLeftIcon className="w-4 h-4" />
-                      Transfer
-                    </button>
-                    <button
-                      className="text-left px-3 py-2 text-sm rounded-lg hover:bg-destructive/10 text-destructive flex items-center gap-2"
-                      onClick={() => { setEntryCtx(null); setDeleteTarget(entryCtxEntry); }}
-                    >
-                      <TrashIcon className="w-4 h-4" />
-                      Delete
-                    </button>
+                        </div>
+                        <div><h3 className="text-lg font-semibold text-foreground truncate leading-5">{e.title ?? displayCat?.name ?? "Account"}</h3><span className="text-xs text-primary truncate block">{displayCat?.name ?? e.email}</span></div>
+                        {e.url && (<div className="flex items-center gap-2"><svg className="w-4 h-4 text-primary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.1m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg><a href={e.url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline truncate flex-1 min-w-0" onClick={(ev) => ev.stopPropagation()}>{e.url}</a><svg className="w-4 h-4 text-muted-foreground shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg></div>)}
+                        <div className="relative w-full" onClick={(ev) => ev.stopPropagation()}>{copiedId === e.id && <span className="absolute -top-7 right-0 z-10 text-xs font-medium bg-foreground text-background px-2 py-1 rounded-md shadow-sm pointer-events-none">Copied</span>}<InputGroup fullWidth><InputGroup.Input readOnly value={showPasswords[e.id] ? e.password : "••••••••••"} aria-label="Password" className="w-full font-mono text-sm" /><InputGroup.Suffix className="pe-0"><Button isIconOnly size="sm" variant="ghost" aria-label={showPasswords[e.id] ? "Hide password" : "Show password"} onPress={() => setShowPasswords((p) => ({ ...p, [e.id]: !p[e.id] }))} className="h-8 w-8 text-muted-foreground hover:text-foreground">{showPasswords[e.id] ? <EyeSlashIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}</Button><Button isIconOnly size="sm" variant="ghost" aria-label={copiedId === e.id ? "Copied" : "Copy password"} onPress={async () => { await navigator.clipboard.writeText(e.password); setCopiedId(e.id); window.setTimeout(() => setCopiedId((cur) => (cur === e.id ? null : cur)), 1500); }} className={`h-8 w-8 ${copiedId === e.id ? "text-success" : "text-muted-foreground hover:text-foreground"}`}>{copiedId === e.id ? <CheckIcon className="w-4 h-4" /> : <ClipboardDocumentIcon className="w-4 h-4" />}</Button></InputGroup.Suffix></InputGroup></div>
+                        <div className="flex gap-6 flex-wrap items-center justify-between"><p className="text-xs text-muted-foreground line-clamp-2 max-w-[60%] flex items-center gap-1.5"><svg className="w-3.5 h-3.5 shrink-0 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg><span className="line-clamp-2">{e.description?.trim() ? e.description : "no description"}</span></p><div className="flex items-end justify-end flex-col text-[11px] text-muted-foreground"><span className="truncate max-w-[140px]">{e.email}</span><span>updated {timeAgo(e.updatedAt)}</span></div></div>
+                      </>
+                    )}
+                  </Card.Content>
+                </Card>
+              );
+            })}
+              <Card
+                className={`border-2 border-dashed border-border bg-muted/20 hover:border-border-strong hover:bg-muted/30 transition-colors cursor-pointer shadow-none rounded-2xl flex flex-col justify-center h-full ${viewMode === "compact" ? "min-h-[52px]" : "min-h-[180px]"}`}
+                onClick={() => { setEditing(null); setIsAddOpen(true); }}
+              >
+                <Card.Content className={`flex flex-col items-center justify-center text-center ${viewMode === "compact" ? "px-2.5 py-1.5" : "p-6 py-8"}`}>
+                  <div className={`${viewMode === "compact" ? "w-6 h-6 mb-1" : "w-12 h-12 mb-3"} rounded-xl bg-muted border border-border flex items-center justify-center`}>
+                    <svg className={`${viewMode === "compact" ? "w-3.5 h-3.5" : "w-6 h-6"} text-muted-foreground`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                   </div>
-                )}
-            </>
+                  <p className={`${viewMode === "compact" ? "text-xs" : "text-sm"} font-semibold text-foreground ${viewMode === "compact" ? "" : "mb-1"}`}>Create a new account</p>
+                  {viewMode !== "compact" && <p className="text-sm text-muted-foreground">Add credentials to this space.</p>}
+                </Card.Content>
+              </Card>
+            </div>
           )}
+
+          {/* Entry context menu — same style as space card ctx menu */}
+          {entryCtx && entryCtxEntry && (
+            <div
+              data-entry-ctx
+              className="fixed z-40 min-w-[180px] bg-popover border border-border shadow-sm rounded-xl p-1 flex flex-col"
+              style={{ left: Math.min(entryCtx.x, typeof window !== "undefined" ? window.innerWidth - 190 : entryCtx.x), top: entryCtx.y }}
+              onClick={(ev) => ev.stopPropagation()}
+            >
+              <button
+                className="text-left px-3 py-2 text-sm rounded-lg hover:bg-muted text-foreground flex items-center gap-2"
+                onClick={() => { setEntryCtx(null); setEditing(entryCtxEntry); setIsAddOpen(true); }}
+              >
+                <PencilSquareIcon className="w-4 h-4" />
+                Edit
+              </button>
+              <button
+                className="text-left px-3 py-2 text-sm rounded-lg hover:bg-muted text-foreground flex items-center gap-2"
+                onClick={async () => {
+                  await navigator.clipboard.writeText(entryCtxEntry.password);
+                  setCopiedId(entryCtxEntry.id);
+                  window.setTimeout(() => setCopiedId((cur) => (cur === entryCtxEntry.id ? null : cur)), 1500);
+                  setEntryCtx(null);
+                }}
+              >
+                {copiedId === entryCtxEntry.id ? <CheckIcon className="w-4 h-4 text-success" /> : <ClipboardDocumentIcon className="w-4 h-4" />}
+                {copiedId === entryCtxEntry.id ? "Copied" : "Copy password"}
+              </button>
+              <button
+                className="text-left px-3 py-2 text-sm rounded-lg hover:bg-muted text-foreground flex items-center gap-2"
+                onClick={() => { setEntryCtx(null); setTransferOpen({ ids: [entryCtx.id] }); }}
+              >
+                <ArrowsRightLeftIcon className="w-4 h-4" />
+                Transfer
+              </button>
+              <button
+                className="text-left px-3 py-2 text-sm rounded-lg hover:bg-destructive/10 text-destructive flex items-center gap-2"
+                onClick={() => { setEntryCtx(null); setDeleteTarget(entryCtxEntry); }}
+              >
+                <TrashIcon className="w-4 h-4" />
+                Delete
+              </button>
+            </div>
+          )}
+        </>
+      )}
 
       {isAddOpen && (
         <div
@@ -918,110 +918,110 @@ export function SpaceClient({
               </Button>
             </div>
             <form noValidate key={editing?.id ?? `new-${genPassword ?? ""}-${genCreate ? "gen" : ""}`} action={async (fd) => {
-                setEntryFormError(null);
-                setFieldErrors({});
-                try {
-                  // inject category fields from state — DB only
-                  if (editing) {
-                    fd.set("entryId", editing.id);
-                    if (editCatKey === "none") {
-                      fd.set("categoryId", "none");
-                      fd.delete("category"); fd.delete("customCategory"); fd.delete("icon"); fd.delete("color"); fd.delete("logoUrl");
-                    } else if (editCatKey === "custom") {
-                      fd.set("categoryId", "custom");
-                      fd.set("customCategory", editCustomName);
-                      fd.set("icon", editCatIcon);
-                      fd.set("color", editCatColor);
-                      fd.set("logoUrl", editCatLogoUrl || "");
-                    } else {
-                      // existing category id from DB
-                      fd.set("categoryId", editCatKey);
-                      fd.delete("category"); fd.delete("customCategory");
-                      fd.set("icon", editCatIcon);
-                      fd.set("color", editCatColor);
-                      fd.set("logoUrl", editCatLogoUrl || "");
-                    }
-                    // client-side zod check before server
-                    const toCheck: Record<string, unknown> = {
-                      title: String(fd.get("title") || "").trim() || null,
-                      email: String(fd.get("email") || "").trim(),
-                      password: String(fd.get("password") || "") || null,
-                      url: String(fd.get("url") || "").trim() || null,
-                      description: String(fd.get("description") || "").trim() || null,
-                      category: String(fd.get("category") || fd.get("customCategory") || "").trim() || null,
-                      icon: String(fd.get("icon") || "").trim() || null,
-                      color: String(fd.get("color") || "").trim() || null,
-                      logoUrl: String(fd.get("logoUrl") || "").trim() || null,
-                      entryId: editing.id,
-                      spaceId: space.id,
-                    };
-                    const parsed = updateEntrySchema.safeParse(toCheck);
-                    if (!parsed.success) {
-                      const map: Record<string, string> = {};
-                      for (const iss of (parsed.error as any).issues as Array<{ path: string; message: string }>) {
-                        if (!map[iss.path]) map[iss.path] = iss.message;
-                      }
-                      setFieldErrors(map);
-                      return;
-                    }
-                    await updateEntry(fd);
+              setEntryFormError(null);
+              setFieldErrors({});
+              try {
+                // inject category fields from state — DB only
+                if (editing) {
+                  fd.set("entryId", editing.id);
+                  if (editCatKey === "none") {
+                    fd.set("categoryId", "none");
+                    fd.delete("category"); fd.delete("customCategory"); fd.delete("icon"); fd.delete("color"); fd.delete("logoUrl");
+                  } else if (editCatKey === "custom") {
+                    fd.set("categoryId", "custom");
+                    fd.set("customCategory", editCustomName);
+                    fd.set("icon", editCatIcon);
+                    fd.set("color", editCatColor);
+                    fd.set("logoUrl", editCatLogoUrl || "");
                   } else {
-                    if (createCatKey === "none") {
-                      fd.set("categoryId", "none");
-                    } else if (createCatKey === "custom") {
-                      fd.set("categoryId", "custom");
-                      fd.set("customCategory", createCustomName);
-                      fd.set("icon", createCatIcon);
-                      fd.set("color", createCatColor);
-                      fd.set("logoUrl", createCatLogoUrl || "");
-                    } else {
-                      fd.set("categoryId", createCatKey);
-                      fd.set("icon", createCatIcon);
-                      fd.set("color", createCatColor);
-                      fd.set("logoUrl", createCatLogoUrl || "");
-                    }
-                    const toCheck: Record<string, unknown> = {
-                      title: String(fd.get("title") || "").trim() || null,
-                      email: String(fd.get("email") || "").trim(),
-                      password: String(fd.get("password") || "").trim(),
-                      url: String(fd.get("url") || "").trim() || null,
-                      description: String(fd.get("description") || "").trim() || null,
-                      category: String(fd.get("category") || fd.get("customCategory") || "").trim() || null,
-                      icon: String(fd.get("icon") || "").trim() || null,
-                      color: String(fd.get("color") || "").trim() || null,
-                      logoUrl: String(fd.get("logoUrl") || "").trim() || null,
-                    };
-                    const parsed = entrySchema.safeParse(toCheck);
-                    if (!parsed.success) {
-                      const map: Record<string, string> = {};
-                      for (const iss of (parsed.error as any).issues as Array<{ path: string; message: string }>) {
-                        if (!map[iss.path]) map[iss.path] = iss.message;
-                      }
-                      setFieldErrors(map);
-                      return;
-                    }
-                    await createEntry(fd);
+                    // existing category id from DB
+                    fd.set("categoryId", editCatKey);
+                    fd.delete("category"); fd.delete("customCategory");
+                    fd.set("icon", editCatIcon);
+                    fd.set("color", editCatColor);
+                    fd.set("logoUrl", editCatLogoUrl || "");
                   }
-                  setIsAddOpen(false);
-                  setEditing(null);
-                  setGenPassword(null);
-                  setGenCreate(false);
-                  setFieldErrors({});
-                } catch (e) {
-                  const msg = e instanceof Error ? e.message : "Validation failed";
-                  const lower = msg.toLowerCase();
-                  const map: Record<string, string> = {};
-                  if (lower.includes("title")) map.title = msg;
-                  else if (lower.includes("login") || lower.includes("username") || lower.includes("email")) map.email = msg;
-                  else if (lower.includes("password")) map.password = msg;
-                  else if (lower.includes("url")) map.url = msg;
-                  else if (lower.includes("description") || lower.includes("note")) map.description = msg;
-                  else if (lower.includes("category")) map.category = msg;
-                  else map.email = msg;
-                  setFieldErrors(map);
-                  return;
+                  // client-side zod check before server
+                  const toCheck: Record<string, unknown> = {
+                    title: String(fd.get("title") || "").trim() || null,
+                    email: String(fd.get("email") || "").trim(),
+                    password: String(fd.get("password") || "") || null,
+                    url: String(fd.get("url") || "").trim() || null,
+                    description: String(fd.get("description") || "").trim() || null,
+                    category: String(fd.get("category") || fd.get("customCategory") || "").trim() || null,
+                    icon: String(fd.get("icon") || "").trim() || null,
+                    color: String(fd.get("color") || "").trim() || null,
+                    logoUrl: String(fd.get("logoUrl") || "").trim() || null,
+                    entryId: editing.id,
+                    spaceId: space.id,
+                  };
+                  const parsed = updateEntrySchema.safeParse(toCheck);
+                  if (!parsed.success) {
+                    const map: Record<string, string> = {};
+                    for (const iss of (parsed.error as any).issues as Array<{ path: string; message: string }>) {
+                      if (!map[iss.path]) map[iss.path] = iss.message;
+                    }
+                    setFieldErrors(map);
+                    return;
+                  }
+                  await updateEntry(fd);
+                } else {
+                  if (createCatKey === "none") {
+                    fd.set("categoryId", "none");
+                  } else if (createCatKey === "custom") {
+                    fd.set("categoryId", "custom");
+                    fd.set("customCategory", createCustomName);
+                    fd.set("icon", createCatIcon);
+                    fd.set("color", createCatColor);
+                    fd.set("logoUrl", createCatLogoUrl || "");
+                  } else {
+                    fd.set("categoryId", createCatKey);
+                    fd.set("icon", createCatIcon);
+                    fd.set("color", createCatColor);
+                    fd.set("logoUrl", createCatLogoUrl || "");
+                  }
+                  const toCheck: Record<string, unknown> = {
+                    title: String(fd.get("title") || "").trim() || null,
+                    email: String(fd.get("email") || "").trim(),
+                    password: String(fd.get("password") || "").trim(),
+                    url: String(fd.get("url") || "").trim() || null,
+                    description: String(fd.get("description") || "").trim() || null,
+                    category: String(fd.get("category") || fd.get("customCategory") || "").trim() || null,
+                    icon: String(fd.get("icon") || "").trim() || null,
+                    color: String(fd.get("color") || "").trim() || null,
+                    logoUrl: String(fd.get("logoUrl") || "").trim() || null,
+                  };
+                  const parsed = entrySchema.safeParse(toCheck);
+                  if (!parsed.success) {
+                    const map: Record<string, string> = {};
+                    for (const iss of (parsed.error as any).issues as Array<{ path: string; message: string }>) {
+                      if (!map[iss.path]) map[iss.path] = iss.message;
+                    }
+                    setFieldErrors(map);
+                    return;
+                  }
+                  await createEntry(fd);
                 }
-              }} className="flex flex-col flex-1 min-h-0">
+                setIsAddOpen(false);
+                setEditing(null);
+                setGenPassword(null);
+                setGenCreate(false);
+                setFieldErrors({});
+              } catch (e) {
+                const msg = e instanceof Error ? e.message : "Validation failed";
+                const lower = msg.toLowerCase();
+                const map: Record<string, string> = {};
+                if (lower.includes("title")) map.title = msg;
+                else if (lower.includes("login") || lower.includes("username") || lower.includes("email")) map.email = msg;
+                else if (lower.includes("password")) map.password = msg;
+                else if (lower.includes("url")) map.url = msg;
+                else if (lower.includes("description") || lower.includes("note")) map.description = msg;
+                else if (lower.includes("category")) map.category = msg;
+                else map.email = msg;
+                setFieldErrors(map);
+                return;
+              }
+            }} className="flex flex-col flex-1 min-h-0">
               <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 sm:py-6 space-y-4 overscroll-contain">
                 <input type="hidden" name="spaceId" value={space.id} />
                 <TextField name="title" defaultValue={editing?.title ?? ""} isInvalid={!!fieldErrors.title} validationBehavior="aria" className="w-full">

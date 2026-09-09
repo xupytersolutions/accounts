@@ -1,9 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { Button, Card, Chip } from "@heroui/react";
+import { Button, Chip } from "@heroui/react";
 import { SiteHeader } from "./site-header";
 import { PasswordGenerator } from "./password-generator";
+import { LandingFeatures } from "./landing-features";
+import { LandingCtaFaq } from "./landing-cta-faq";
+import { SiteFooter } from "./site-footer";
 import { ArrowRightIcon, ShieldCheckIcon } from "@heroicons/react/24/solid";
 
 export function LandingClient({ isLoggedIn }: { isLoggedIn: boolean }) {
@@ -31,7 +34,7 @@ export function LandingClient({ isLoggedIn }: { isLoggedIn: boolean }) {
                 <Chip className="w-fit sm:flex gap-1 hidden" variant="soft">
                   <ShieldCheckIcon className="h-4" /> Google-only login • No passwords to remember
                 </Chip>
-                <h1 className="text-4xl sm:text-5xl font-bold text-display leading-tight text-foreground">
+                <h1 className="font-display text-5xl sm:text-6xl lg:text-7xl font-normal uppercase text-foreground">
                   All your accounts,
                   <br />
                   <span className="text-primary">neatly organized</span>
@@ -46,29 +49,18 @@ export function LandingClient({ isLoggedIn }: { isLoggedIn: boolean }) {
                 </div>
               </div>
 
-              <PasswordGenerator />
+              <div id="generator">
+                <PasswordGenerator />
+              </div>
             </div>
           </div>
         </section>
 
-        <section className="border-y border-border bg-muted/30">
-          <div className="mx-auto grid max-w-7xl gap-6 px-6 py-16 sm:grid-cols-3">
-            {[
-              { title: "Spaces, not folders", desc: "Personal, Company, Clients — model your real life. Each space owns its vault entries.", icon: "📁" },
-              { title: "Minimal credential form", desc: "Just email, password and description. Fast to add, easy to search. No bloat.", icon: "⚡" },
-              { title: "Public / Private split", desc: "Vault is private and guarded by NextAuth. Public routes stay open for generator & blog.", icon: "🔒" },
-            ].map((f) => (
-              <Card key={f.title} className="border border-border bg-card hover:border-border-strong transition-colors">
-                <Card.Content className="gap-3 p-6">
-                  <div className="text-3xl mb-2">{f.icon}</div>
-                  <p className="font-semibold text-lg text-foreground">{f.title}</p>
-                  <p className="text-sm leading-7 text-muted-foreground">{f.desc}</p>
-                </Card.Content>
-              </Card>
-            ))}
-          </div>
-        </section>
+        <LandingFeatures />
+        <LandingCtaFaq isLoggedIn={isLoggedIn} />
       </main>
+
+      <SiteFooter />
     </div>
   );
 }

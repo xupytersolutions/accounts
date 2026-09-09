@@ -1,4 +1,4 @@
-// Vaulta – Accounts manager
+// Xupyter One Account – Accounts manager
 generator client {
   provider = "prisma-client-js"
   // Vercel-safe: default output (node_modules/@prisma/client). Custom output src/generated/prisma breaks nft tracing.

@@ -1,7 +1,7 @@
 # Module: vault
 
 Created: 2026-09-08
-Author: Vaulta
+Author: Xupyter One Account
 Linear: —
 Domain: [vault](../../domains/vault.md)
 

@@ -1,4 +1,4 @@
-# Vaulta — Accounts
+# Xupyter One Account
 
 | Meta | Value |
 |------|-------|

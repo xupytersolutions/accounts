@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button } from "@heroui/react";
+import { Button, Checkbox } from "@heroui/react";
 import {
   EllipsisVerticalIcon,
   EyeIcon,
@@ -30,11 +30,11 @@ export function AccountCard({
     entry.categoryRef ??
     (entry.category
       ? {
-          name: entry.category,
-          icon: entry.icon,
-          color: entry.color,
-          logoUrl: (entry as any).logoUrl ?? null,
-        }
+        name: entry.category,
+        icon: entry.icon,
+        color: entry.color,
+        logoUrl: (entry as any).logoUrl ?? null,
+      }
       : null);
 
   const catColor = displayCat?.color || "#006FEE";
@@ -46,15 +46,15 @@ export function AccountCard({
       <div
         className="bg-card border border-border rounded-2xl p-4 hover:bg-muted/20 transition-colors group relative"
         onContextMenu={onContextMenu}
+        onClick={onToggleSelect}
       >
         {/* Header: Checkbox + Logo + Title/Email + Menu */}
-        <div className="flex items-start gap-3 mb-3">
-          <input
-            type="checkbox"
-            checked={isSelected}
+        <div className="flex items-start gap-3">
+          <Checkbox
+            isSelected
             onChange={onToggleSelect}
-            className="mt-1 rounded border-border h-4 w-4 shrink-0"
-          />
+            className='bg-pink-500'
+          ></Checkbox>
           <div
             className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 text-white overflow-hidden"
             style={{ backgroundColor: catColor }}

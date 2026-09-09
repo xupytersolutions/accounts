@@ -89,7 +89,33 @@
   body {
     background: var(--color-background);
     color: var(--color-foreground);
-    font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  }
+
+  /* Header / headings → Sora */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-sora), ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: -0.02em;
+  }
+
+  /* Landing display → Bebas Neue */
+  .font-display {
+    font-family: var(--font-bebas), ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: 0.02em;
+    line-height: 0.95;
+  }
+
+  .font-header {
+    font-family: var(--font-sora), ui-sans-serif, system-ui, sans-serif;
+  }
+
+  .font-body {
+    font-family: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
   }
 
   :focus-visible {

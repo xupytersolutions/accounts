@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Button, Card, Slider, Label, Alert } from "@heroui/react";
 import { ClipboardDocumentIcon, CheckIcon } from "@heroicons/react/24/outline";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
 import Link from "next/link";
 
 const UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -259,7 +259,7 @@ export function PasswordGenerator({ onChoose, hideAddToSpace }: PasswordGenerato
   const handleAddToSpace = async () => {
     if (!session?.user) {
       setShowLoginAlert(true);
-      setTimeout(() => setShowLoginAlert(false), 4000);
+      setTimeout(() => redirect('/login'), 2000);
       return;
     }
     setShowSpaceModal(true);
@@ -281,7 +281,7 @@ export function PasswordGenerator({ onChoose, hideAddToSpace }: PasswordGenerato
 
   const handleSelectSpace = (spaceId: string) => {
     try {
-      sessionStorage.setItem("vaulta:genPassword", password);
+      sessionStorage.setItem("one-account:genPassword", password);
     } catch {}
     setShowSpaceModal(false);
     const params = new URLSearchParams({ create: "1", gen: "1", password });
@@ -483,11 +483,11 @@ export function PasswordGenerator({ onChoose, hideAddToSpace }: PasswordGenerato
                 Add to my space
               </Button>
               {showLoginAlert && (
-                <Alert status="accent">
+                <Alert status="default">
                   <Alert.Indicator />
                   <Alert.Content>
                     <Alert.Title>Login to save your password</Alert.Title>
-                    <Alert.Description>
+                    <Alert.Description className="text-foreground">
                       You need to be signed in to save generated passwords to a space.{" "}
                       <Link href="/login" className="underline font-medium">
                         Sign in with Google

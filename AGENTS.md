@@ -1,12 +1,12 @@
-# AGENTS — Vaulta
+# AGENTS — Xupyter One Account
 
 > Start here. This is the agent start/exit gate.
 
 ## Project
 
-- **Name:** Vaulta (Accounts)
+- **Name:** Xupyter One Account
 - **Stack:** ts — Next.js + HeroUI + Prisma + Postgres + NextAuth (Google only)
-- **Repo:** C:\main\projects\accounts
+- **Repo:** C:\main\projects\nextjs\one-account
 - **Docs:** `.docs/index.md` is the source of truth for modules/domains. Read it before coding.
 
 ## Rules

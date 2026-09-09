@@ -126,11 +126,11 @@ export function DashboardClient({ spaces, createSpace, deleteSpace, updateSpace 
 
   const activeFilterCount = (typeFilter !== "all" ? 1 : 0) + (sortBy !== "updated" ? 1 : 0);
   useEffect(() => {
-    const v = localStorage.getItem("vaulta:spacesView") as ViewMode | null;
+    const v = localStorage.getItem("one-account:spacesView") as ViewMode | null;
     if (v === "compact" || v === "comfortable") setViewMode(v);
   }, []);
   useEffect(() => {
-    localStorage.setItem("vaulta:spacesView", viewMode);
+    localStorage.setItem("one-account:spacesView", viewMode);
   }, [viewMode]);
 
   useEffect(() => {
