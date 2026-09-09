@@ -3,7 +3,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { SpaceType } from "@/generated/prisma/client";
+import { SpaceType } from "@prisma/client";
 import { spaceSchema, entrySchema, updateEntrySchema } from "@/lib/validators";
 
 export async function createSpace(formData: FormData) {

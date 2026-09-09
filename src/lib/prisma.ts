@@ -1,5 +1,5 @@
-import { PrismaClient } from "@/generated/prisma/client";
-export type { SpaceType } from "@/generated/prisma/client";
+import { PrismaClient } from "@prisma/client";
+export type { SpaceType } from "@prisma/client";
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 

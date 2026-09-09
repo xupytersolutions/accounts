@@ -1,7 +1,7 @@
 // Vaulta – Accounts manager
 generator client {
-  provider      = "prisma-client"
-  output        = "../src/generated/prisma"
+  provider = "prisma-client-js"
+  // Vercel-safe: default output (node_modules/@prisma/client). Custom output src/generated/prisma breaks nft tracing.
   binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
