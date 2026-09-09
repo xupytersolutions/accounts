@@ -341,22 +341,22 @@ export function DashboardClient({ spaces, createSpace, deleteSpace, updateSpace 
         </div>
       ) : (
         <>
-          <div className={`grid gap-3 sm:gap-4 mb-8 ${viewMode === "compact" ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"}`}>
+          <div className={`grid mb-8 ${viewMode === "compact" ? "grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"}`}>
             {filteredSpaces.map((s) => {
               const color = getSpaceColor(s);
               const isCompact = viewMode === "compact";
               return (
                 <Card
                   key={s.id}
-                  className={`w-full shadow-none hover:scale-[1.02] duration-300 transition-transform rounded-2xl group cursor-pointer ${isCompact ? "min-h-[64px]" : ""}`}
+                  className={`w-full shadow-none hover:scale-[1.02] duration-300 transition-transform rounded-2xl group cursor-pointer ${isCompact ? "min-h-[48px]" : ""}`}
                   onContextMenu={(e) => { e.preventDefault(); setCtx({ id: s.id, x: e.clientX, y: e.clientY }); }}
                   onClick={() => router.push(`/spaces/${s.id}`)}
                 >
-                  <Card.Content className={isCompact ? "px-3 py-2 flex flex-row items-center gap-2.5" : "p-2 flex flex-col gap-3"}>
+                  <Card.Content className={isCompact ? "px-2.5 py-1.5 flex flex-row items-center gap-2" : "p-2 flex flex-col gap-3"}>
                     {isCompact ? (
                       <>
-                        <div className="w-8 h-8 rounded-md flex items-center justify-center shrink-0 text-white" style={{ backgroundColor: color }}>
-                          {s.icon ? <SpaceIcon icon={s.icon} className="w-4 h-4 text-white" /> : <span className="font-bold text-xs">{s.name.charAt(0).toUpperCase()}</span>}
+                        <div className="w-7 h-7 rounded-md flex items-center justify-center shrink-0 text-white" style={{ backgroundColor: color }}>
+                          {s.icon ? <SpaceIcon icon={s.icon} className="w-3.5 h-3.5 text-white" /> : <span className="font-bold text-[11px]">{s.name.charAt(0).toUpperCase()}</span>}
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="text-sm font-semibold text-foreground truncate leading-tight">{s.name}</h3>
@@ -419,12 +419,12 @@ export function DashboardClient({ spaces, createSpace, deleteSpace, updateSpace 
             })}
             {/* Create New Space Card */}
             <Card
-              className={`border-2 border-dashed border-border bg-muted/20 hover:border-border-strong hover:bg-muted/30 transition-colors cursor-pointer shadow-none rounded-2xl flex flex-col justify-center h-full ${viewMode === "compact" ? "min-h-[64px]" : "min-h-[158px]"}`}
+              className={`border-2 border-dashed border-border bg-muted/20 hover:border-border-strong hover:bg-muted/30 transition-colors cursor-pointer shadow-none rounded-2xl flex flex-col justify-center h-full ${viewMode === "compact" ? "min-h-[48px]" : "min-h-[158px]"}`}
               onClick={() => setIsCreateModalOpen(true)}
             >
-              <Card.Content className={`flex flex-col items-center justify-center text-center ${viewMode === "compact" ? "px-3 py-2" : "p-6 py-8"}`}>
-                <div className={`${viewMode === "compact" ? "w-7 h-7 mb-1" : "w-12 h-12 mb-3"} rounded-xl bg-neutral-200 dark:bg-neutral-800 flex items-center justify-center`}>
-                  <svg className={`${viewMode === "compact" ? "w-4 h-4" : "w-6 h-6"} text-neutral-500`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <Card.Content className={`flex flex-col items-center justify-center text-center ${viewMode === "compact" ? "px-2.5 py-1.5" : "p-6 py-8"}`}>
+                <div className={`${viewMode === "compact" ? "w-6 h-6 mb-1" : "w-12 h-12 mb-3"} rounded-xl bg-neutral-200 dark:bg-neutral-800 flex items-center justify-center`}>
+                  <svg className={`${viewMode === "compact" ? "w-3.5 h-3.5" : "w-6 h-6"} text-neutral-500`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
                 </div>

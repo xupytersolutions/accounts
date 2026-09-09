@@ -717,7 +717,7 @@ export function SpaceClient({
                     <Button variant="tertiary" onPress={() => { setSearch(""); setCategoryFilter("all"); setSortBy("updated"); }}>Clear filters</Button>
                   </div>
                 ) : (
-                <div className={`grid gap-3 mb-8 ${viewMode === "compact" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"}`}>{filteredEntries.map((e) => {
+                <div className={`grid mb-8 ${viewMode === "compact" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"}`}>{filteredEntries.map((e) => {
                   const presetMatch = (name: string) => ACCOUNT_CATEGORY_PRESETS.find((p) => p.label.toLowerCase() === name.toLowerCase() || p.id === name.toLowerCase());
                   const displayCat: Category | { name: string; icon: string | null; color: string | null; logoUrl: string | null } | null =
                     (e as unknown as { categoryRef?: Category | null }).categoryRef ?? (e.category ? { name: e.category, icon: e.icon, color: e.color, logoUrl: (e as unknown as { logoUrl?: string | null }).logoUrl ?? presetMatch(e.category)?.logoUrl ?? null } : null);
@@ -732,7 +732,7 @@ export function SpaceClient({
                     className="w-full shadow-none hover:scale-[1.02] duration-300 transition-transform rounded-2xl group cursor-pointer"
                     onContextMenu={(e2) => { e2.preventDefault(); setEntryCtx({ id: e.id, x: e2.clientX, y: e2.clientY }); }}
                   >
-                    <Card.Content className={isCompact ? "px-3 py-2.5 flex flex-col gap-2" : "p-2 flex flex-col gap-3"}>
+                    <Card.Content className={isCompact ? "px-2.5 py-1.5 flex flex-col gap-1.5" : "p-2 flex flex-col gap-3"}>
                       {isCompact ? (
                         <>
                           <div className="flex items-center gap-2">
@@ -786,14 +786,14 @@ export function SpaceClient({
                   );
                   })}
                   <Card
-                    className={`border-2 border-dashed border-border bg-muted/20 hover:border-border-strong hover:bg-muted/30 transition-colors cursor-pointer shadow-none rounded-2xl flex flex-col justify-center h-full ${viewMode === "compact" ? "min-h-[68px]" : "min-h-[180px]"}`}
+                    className={`border-2 border-dashed border-border bg-muted/20 hover:border-border-strong hover:bg-muted/30 transition-colors cursor-pointer shadow-none rounded-2xl flex flex-col justify-center h-full ${viewMode === "compact" ? "min-h-[52px]" : "min-h-[180px]"}`}
                     onClick={() => { setEditing(null); setIsAddOpen(true); }}
                   >
-                    <Card.Content className={`flex flex-col items-center justify-center text-center ${viewMode === "compact" ? "p-4 py-4" : "p-6 py-8"}`}>
-                      <div className={`${viewMode === "compact" ? "w-8 h-8 mb-2" : "w-12 h-12 mb-3"} rounded-xl bg-muted border border-border flex items-center justify-center`}>
-                        <svg className={`${viewMode === "compact" ? "w-4 h-4" : "w-6 h-6"} text-muted-foreground`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                    <Card.Content className={`flex flex-col items-center justify-center text-center ${viewMode === "compact" ? "px-2.5 py-1.5" : "p-6 py-8"}`}>
+                      <div className={`${viewMode === "compact" ? "w-6 h-6 mb-1" : "w-12 h-12 mb-3"} rounded-xl bg-muted border border-border flex items-center justify-center`}>
+                        <svg className={`${viewMode === "compact" ? "w-3.5 h-3.5" : "w-6 h-6"} text-muted-foreground`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                       </div>
-                      <p className={`${viewMode === "compact" ? "text-xs" : "text-sm"} font-semibold text-foreground mb-1`}>Create a new account</p>
+                      <p className={`${viewMode === "compact" ? "text-xs" : "text-sm"} font-semibold text-foreground ${viewMode === "compact" ? "" : "mb-1"}`}>Create a new account</p>
                       {viewMode !== "compact" && <p className="text-sm text-muted-foreground">Add credentials to this space.</p>}
                     </Card.Content>
                   </Card>
