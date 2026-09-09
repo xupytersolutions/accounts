@@ -732,26 +732,30 @@ export function SpaceClient({
                     className="w-full shadow-none hover:scale-[1.02] duration-300 transition-transform rounded-2xl group cursor-pointer"
                     onContextMenu={(e2) => { e2.preventDefault(); setEntryCtx({ id: e.id, x: e2.clientX, y: e2.clientY }); }}
                   >
-                    <Card.Content className={isCompact ? "p-3 flex items-center gap-3" : "p-2 flex flex-col gap-3"}>
+                    <Card.Content className={isCompact ? "px-3 py-2.5 flex flex-col gap-2" : "p-2 flex flex-col gap-3"}>
                       {isCompact ? (
                         <>
-                          <div className="flex items-center gap-2 shrink-0" onClick={(ev) => ev.stopPropagation()}>
-                            <Checkbox isSelected={selected.has(e.id)} onChange={() => toggleSelect(e.id)} aria-label="Select account" className="shrink-0"><Checkbox.Content><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control></Checkbox.Content></Checkbox>
-                            <div className="w-8 h-8 rounded-md flex items-center justify-center shrink-0 text-white" style={{ backgroundColor: catColor }}>
-                              {catLogo ? <img src={catLogo} alt={displayCat!.name} className="w-4 h-4 object-contain" onError={(ev) => { (ev.currentTarget as HTMLImageElement).style.display = "none"; }} /> : catIcon ? <CategoryIcon icon={catIcon} className="w-4 h-4 text-white" /> : <span className="font-bold text-xs">{(e.title ?? e.email).charAt(0).toUpperCase()}</span>}
+                          <div className="flex items-center gap-2">
+                            <Checkbox isSelected={selected.has(e.id)} onChange={() => toggleSelect(e.id)} aria-label="Select account" className="shrink-0" onClick={(ev) => ev.stopPropagation()}><Checkbox.Content><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control></Checkbox.Content></Checkbox>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-sm font-semibold text-foreground truncate leading-tight">{e.title ?? displayCat?.name ?? "Account"}</h3>
+                              <span className="text-xs text-muted-foreground truncate block">{e.email}</span>
                             </div>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="text-sm font-semibold text-foreground truncate leading-tight">{e.title ?? displayCat?.name ?? "Account"}</h3>
-                            <span className="text-xs text-muted-foreground truncate block">{e.email}</span>
-                          </div>
-                          <div className="flex items-center gap-1 shrink-0" onClick={(ev) => ev.stopPropagation()}>
-                            <Button isIconOnly size="sm" variant="ghost" aria-label={copiedId === e.id ? "Copied" : "Copy"} onPress={async () => { await navigator.clipboard.writeText(e.password); setCopiedId(e.id); window.setTimeout(() => setCopiedId((cur) => (cur === e.id ? null : cur)), 1500); }} className={`h-7 w-7 ${copiedId === e.id ? "text-success" : "text-muted-foreground"}`}>{copiedId === e.id ? <CheckIcon className="w-4 h-4" /> : <ClipboardDocumentIcon className="w-4 h-4" />}</Button>
-                            <Button isIconOnly variant="tertiary" size="sm" aria-label="Account menu" className="h-7 w-7" onPress={(ev: unknown) => {
+                            <Button isIconOnly variant="tertiary" size="sm" aria-label="Account menu" className="h-7 w-7 shrink-0" onPress={(ev: unknown) => {
                               const anyEv = ev as { target?: Element; currentTarget?: Element }; const raw = (anyEv?.currentTarget ?? anyEv?.target) as HTMLElement | undefined; const target = (raw?.closest?.("button") as HTMLElement | null) ?? raw ?? null;
                               if (!target?.getBoundingClientRect) { setEntryCtx((prev) => (prev?.id === e.id ? null : { id: e.id, x: window.innerWidth / 2, y: window.innerHeight / 2 })); return; }
                               const r = target.getBoundingClientRect(); const x = Math.min(r.right - 160, window.innerWidth - 180); const y = r.bottom + 8; setEntryCtx((prev) => (prev?.id === e.id ? null : { id: e.id, x, y }));
                             }}><EllipsisVerticalIcon className="w-4 h-4 text-muted-foreground" /></Button>
+                          </div>
+                          <div className="relative w-full" onClick={(ev) => ev.stopPropagation()}>
+                            {copiedId === e.id && <span className="absolute -top-7 right-0 z-10 text-xs font-medium bg-foreground text-background px-2 py-1 rounded-md shadow-sm pointer-events-none">Copied</span>}
+                            <InputGroup fullWidth>
+                              <InputGroup.Input readOnly value={showPasswords[e.id] ? e.password : "••••••••••"} aria-label="Password" className="w-full font-mono text-sm h-8" />
+                              <InputGroup.Suffix className="pe-0">
+                                <Button isIconOnly size="sm" variant="ghost" aria-label={showPasswords[e.id] ? "Hide password" : "Show password"} onPress={() => setShowPasswords((p) => ({ ...p, [e.id]: !p[e.id] }))} className="h-8 w-8 text-muted-foreground hover:text-foreground">{showPasswords[e.id] ? <EyeSlashIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}</Button>
+                                <Button isIconOnly size="sm" variant="ghost" aria-label={copiedId === e.id ? "Copied" : "Copy password"} onPress={async () => { await navigator.clipboard.writeText(e.password); setCopiedId(e.id); window.setTimeout(() => setCopiedId((cur) => (cur === e.id ? null : cur)), 1500); }} className={`h-8 w-8 ${copiedId === e.id ? "text-success" : "text-muted-foreground hover:text-foreground"}`}>{copiedId === e.id ? <CheckIcon className="w-4 h-4" /> : <ClipboardDocumentIcon className="w-4 h-4" />}</Button>
+                              </InputGroup.Suffix>
+                            </InputGroup>
                           </div>
                         </>
                       ) : (
