@@ -1,5 +1,4 @@
 import type { Category, VaultEntry } from "@/lib/types";
-import { CATEGORY_PRESETS, findPresetByName } from "@/lib/constants/category-presets";
 
 export type DisplayCategory = {
   name: string;
@@ -9,7 +8,7 @@ export type DisplayCategory = {
 };
 
 /**
- * Resolves the display category for an entry
+ * Resolves the display category for an entry — DB only
  */
 export function getDisplayCategory(
   entry: VaultEntry,
@@ -17,38 +16,26 @@ export function getDisplayCategory(
 ): DisplayCategory | null {
   // Use linked category reference first
   if (entry.categoryRef) {
-    const preset = findPresetByName(entry.categoryRef.name);
     return {
       name: entry.categoryRef.name,
-      icon: entry.categoryRef.icon || preset?.icon || null,
-      color: entry.categoryRef.color || preset?.color || "#006FEE",
-      logoUrl: entry.categoryRef.logoUrl || preset?.logoUrl || null,
+      icon: entry.categoryRef.icon || null,
+      color: entry.categoryRef.color || "#006FEE",
+      logoUrl: entry.categoryRef.logoUrl || null,
     };
   }
 
   // Fall back to legacy category string
   if (entry.category) {
-    const preset = findPresetByName(entry.category);
-    if (preset) {
-      return {
-        name: preset.label,
-        icon: preset.icon,
-        color: preset.color,
-        logoUrl: preset.logoUrl,
-      };
-    }
-
-    // Check existing categories
+    // Check existing categories in DB
     const existing = allCategories.find(
       (c) => c.name.toLowerCase() === entry.category!.toLowerCase()
     );
     if (existing) {
-      const existingPreset = findPresetByName(existing.name);
       return {
         name: existing.name,
-        icon: existing.icon || existingPreset?.icon || null,
-        color: existing.color || existingPreset?.color || "#006FEE",
-        logoUrl: existing.logoUrl || existingPreset?.logoUrl || null,
+        icon: existing.icon || null,
+        color: existing.color || "#006FEE",
+        logoUrl: existing.logoUrl || null,
       };
     }
 
@@ -65,7 +52,7 @@ export function getDisplayCategory(
 }
 
 /**
- * Syncs category selection state with icon/color/logo
+ * Syncs category selection state with icon/color/logo — DB only
  */
 export function syncCategoryFields(
   categoryKey: string,
@@ -83,17 +70,7 @@ export function syncCategoryFields(
     };
   }
 
-  // Check presets
-  const preset = CATEGORY_PRESETS.find((p) => p.id === categoryKey);
-  if (preset) {
-    return {
-      icon: preset.icon,
-      color: preset.color,
-      logoUrl: preset.logoUrl,
-    };
-  }
-
-  // Check existing categories
+  // Check existing categories in DB
   const cat = allCategories.find((c) => c.id === categoryKey);
   if (cat) {
     return {

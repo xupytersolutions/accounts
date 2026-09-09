@@ -7,7 +7,6 @@ import {
 } from "@heroicons/react/24/outline";
 import { Icon } from "@/components/ui/icon";
 import type { VaultEntry, Category } from "@/lib/types";
-import { CATEGORY_PRESETS, findPresetByName } from "@/lib/constants/category-presets";
 
 type AccountCardProps = {
   entry: VaultEntry;
@@ -26,22 +25,21 @@ export function AccountCard({
 }: AccountCardProps) {
   const [showPassword, setShowPassword] = useState(false);
 
-  // Determine display category
+  // Determine display category — DB only
   const displayCat: Category | { name: string; icon: string | null; color: string | null; logoUrl: string | null } | null =
-    entry.categoryRef ?? 
-    (entry.category 
+    entry.categoryRef ??
+    (entry.category
       ? {
           name: entry.category,
           icon: entry.icon,
           color: entry.color,
-          logoUrl: (entry as any).logoUrl ?? findPresetByName(entry.category)?.logoUrl ?? null,
+          logoUrl: (entry as any).logoUrl ?? null,
         }
       : null);
 
-  const preset = displayCat ? findPresetByName(displayCat.name) : null;
-  const catColor = displayCat?.color || preset?.color || "#006FEE";
-  const catIcon = displayCat?.icon || preset?.icon || null;
-  const catLogo = preset?.logoUrl || (displayCat as any)?.logoUrl || null;
+  const catColor = displayCat?.color || "#006FEE";
+  const catIcon = displayCat?.icon || null;
+  const catLogo = (displayCat as any)?.logoUrl || null;
 
   return (
     <div className="p-2">

@@ -1,16 +1,12 @@
 "use client";
 import { Button, Card, Separator } from "@heroui/react";
 import Link from "next/link";
+import { SiteHeader } from "./site-header";
 
 export function LoginClient({ action }: { action: () => Promise<void> }) {
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <header className="flex h-16 items-center border-b border-border bg-card px-4 sm:px-6">
-        <Link href="/" className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-bold">V</div>
-          <span className="text-lg font-semibold text-foreground">Vaulta</span>
-        </Link>
-      </header>
+      <SiteHeader />
       <div className="flex flex-1 items-center justify-center p-6">
         <Card className="w-full max-w-md border border-border bg-card shadow-sm">
           <Card.Header className="flex flex-col gap-2 px-8 pb-0 pt-8">

@@ -33,17 +33,17 @@ export default async function AccountPage() {
           <form action={updateProfile} className="space-y-4">
             <TextField name="name" defaultValue={user.name ?? ""} className="w-full">
               <Label className="text-sm font-medium text-foreground mb-2">Name</Label>
-              <Input placeholder="Your name" className="h-10" />
+              <Input placeholder="Your name" />
             </TextField>
 
             <TextField name="image" defaultValue={user.image ?? ""} className="w-full">
               <Label className="text-sm font-medium text-foreground mb-2">Avatar image URL</Label>
-              <Input placeholder="https://..." className="h-10" />
+              <Input placeholder="https://..." />
             </TextField>
 
             <TextField isDisabled className="w-full">
               <Label className="text-sm font-medium text-foreground mb-2">Email</Label>
-              <Input value={user.email} className="h-10 bg-muted" />
+              <Input value={user.email} />
             </TextField>
             <p className="text-xs text-muted-foreground -mt-2">Email is managed by your provider.</p>
 

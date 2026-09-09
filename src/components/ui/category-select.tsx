@@ -1,5 +1,4 @@
-import { Select, ListBox, Label, Input, TextField, Header } from "@heroui/react";
-import { CATEGORY_PRESETS } from "@/lib/constants/category-presets";
+import { Select, ListBox, Label, Input, TextField } from "@heroui/react";
 import { IconPicker } from "./icon-picker";
 import { ColorPicker } from "./color-picker";
 import { Icon } from "./icon";
@@ -31,9 +30,10 @@ export function CategorySelect({
   logoUrl,
 }: CategorySelectProps) {
   const showCustomFields = value === "custom";
-  const previewIcon = showCustomFields ? icon : null;
-  const previewColor = showCustomFields ? color : CATEGORY_PRESETS.find(p => p.id === value)?.color || color;
-  const previewLogo = showCustomFields ? logoUrl : CATEGORY_PRESETS.find(p => p.id === value)?.logoUrl || null;
+  const selectedCat = categories.find((c) => c.id === value);
+  const previewIcon = showCustomFields ? icon : selectedCat?.icon || null;
+  const previewColor = showCustomFields ? color : selectedCat?.color || color;
+  const previewLogo = showCustomFields ? logoUrl : selectedCat?.logoUrl || null;
 
   return (
     <div className="space-y-4">
@@ -45,8 +45,8 @@ export function CategorySelect({
         <Label className="text-sm font-medium text-foreground mb-2">
           Category
         </Label>
-        <Select.Trigger className="bg-card border border-border text-foreground h-10">
-          <Select.Value className="text-foreground" />
+        <Select.Trigger>
+          <Select.Value />
         </Select.Trigger>
         <Select.Popover className="bg-popover border border-border shadow-sm">
           <ListBox className="p-1">
@@ -56,62 +56,31 @@ export function CategorySelect({
             >
               None
             </ListBox.Item>
-            <ListBox.Section aria-label="Popular">
-              <Header>Popular</Header>
-              {CATEGORY_PRESETS.map((preset) => (
-                <ListBox.Item
-                  key={preset.id}
-                  id={preset.id}
-                  className="text-popover-foreground data-[focused]:bg-muted"
-                >
-                  <div className="flex items-center gap-2">
-                    {preset.logoUrl && (
-                      <div
-                        className="w-5 h-5 rounded flex items-center justify-center"
-                        style={{ backgroundColor: preset.color }}
-                      >
-                        <img
-                          src={preset.logoUrl}
-                          alt=""
-                          className="w-3 h-3 object-contain"
-                        />
-                      </div>
-                    )}
-                    {preset.label}
-                  </div>
-                </ListBox.Item>
-              ))}
-            </ListBox.Section>
-            {categories.length > 0 && (
-              <ListBox.Section aria-label="Your Categories">
-                <Header>Your Categories</Header>
-                {categories.map((cat) => (
-                  <ListBox.Item
-                    key={cat.id}
-                    id={cat.id}
-                    className="text-popover-foreground data-[focused]:bg-muted"
-                  >
-                    <div className="flex items-center gap-2">
-                      {cat.logoUrl ? (
-                        <div
-                          className="w-5 h-5 rounded flex items-center justify-center"
-                          style={{ backgroundColor: cat.color || "#006FEE" }}
-                        >
-                          <img
-                            src={cat.logoUrl}
-                            alt=""
-                            className="w-3 h-3 object-contain"
-                          />
-                        </div>
-                      ) : cat.icon ? (
-                        <Icon icon={cat.icon} className="w-4 h-4" />
-                      ) : null}
-                      {cat.name}
+            {categories.map((cat) => (
+              <ListBox.Item
+                key={cat.id}
+                id={cat.id}
+                className="text-popover-foreground data-[focused]:bg-muted"
+              >
+                <div className="flex items-center gap-2">
+                  {cat.logoUrl ? (
+                    <div
+                      className="w-5 h-5 rounded flex items-center justify-center"
+                      style={{ backgroundColor: cat.color || "#006FEE" }}
+                    >
+                      <img
+                        src={cat.logoUrl}
+                        alt=""
+                        className="w-3 h-3 object-contain"
+                      />
                     </div>
-                  </ListBox.Item>
-                ))}
-              </ListBox.Section>
-            )}
+                  ) : cat.icon ? (
+                    <Icon icon={cat.icon} className="w-4 h-4" />
+                  ) : null}
+                  {cat.name}
+                </div>
+              </ListBox.Item>
+            ))}
             <ListBox.Item
               id="custom"
               className="text-popover-foreground data-[focused]:bg-muted border-t border-border mt-1 pt-1"
@@ -132,7 +101,6 @@ export function CategorySelect({
               value={customName}
               onChange={(e) => onCustomNameChange((e.target as HTMLInputElement).value)}
               placeholder="e.g. Banking"
-              className="h-10"
             />
           </TextField>
 

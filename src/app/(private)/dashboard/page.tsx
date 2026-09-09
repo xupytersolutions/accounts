@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { DashboardClient } from "@/components/dashboard-client";
 import { createSpace, deleteSpace, updateSpace } from "@/lib/actions";
 import { DEFAULT_SPACES } from "@/lib/constants/default-spaces";
+import { ensureDefaultCategories } from "@/lib/category-seed";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -12,6 +13,14 @@ export default async function DashboardPage() {
     include: { _count: { select: { entries: true } } },
     orderBy: { createdAt: "desc" },
   });
+
+  if (user) {
+    try {
+      await ensureDefaultCategories(user.id);
+    } catch (e) {
+      console.error("[dashboard] failed to seed default categories", e);
+    }
+  }
 
   // Lazy seed for users registered before this feature or if createUser event failed
   if (spaces.length === 0 && user) {

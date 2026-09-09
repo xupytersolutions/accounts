@@ -230,7 +230,7 @@ export function DashboardClient({ spaces, createSpace, deleteSpace, updateSpace 
               placeholder="Search spaces..."
               value={search}
               onChange={(e) => setSearch((e.target as HTMLInputElement).value)}
-              className="pl-10 h-10 border-1 w-full"
+              className="pl-10 w-full"
               aria-label="Search spaces"
             />
           </div>
@@ -282,8 +282,8 @@ export function DashboardClient({ spaces, createSpace, deleteSpace, updateSpace 
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-muted-foreground">Type</Label>
                 <Select selectedKey={typeFilter} onSelectionChange={(k) => setTypeFilter(String(k))} className="w-full">
-                  <Select.Trigger className="bg-card border border-border text-foreground h-9">
-                    <Select.Value className="text-foreground" />
+                  <Select.Trigger>
+                    <Select.Value />
                   </Select.Trigger>
                   <Select.Popover className="bg-popover border border-border shadow-sm">
                     <ListBox className="p-1">
@@ -299,8 +299,8 @@ export function DashboardClient({ spaces, createSpace, deleteSpace, updateSpace 
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-muted-foreground">Sort by</Label>
                 <Select selectedKey={sortBy} onSelectionChange={(k) => setSortBy(String(k))} className="w-full">
-                  <Select.Trigger className="bg-card border border-border text-foreground h-9">
-                    <Select.Value className="text-foreground" />
+                  <Select.Trigger>
+                    <Select.Value />
                   </Select.Trigger>
                   <Select.Popover className="bg-popover border border-border shadow-sm">
                     <ListBox className="p-1">
@@ -513,14 +513,8 @@ export function DashboardClient({ spaces, createSpace, deleteSpace, updateSpace 
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-foreground/40 backdrop-blur-[2px] overflow-y-auto" onClick={() => setIsCreateModalOpen(false)} role="dialog" aria-modal="true">
           <div className="bg-card rounded-t-2xl sm:rounded-2xl border-t sm:border border-border shadow-sm w-full sm:max-w-lg max-h-[90dvh] sm:max-h-[90dvh] flex flex-col overflow-hidden animate-in slide-in-from-bottom-2 sm:slide-in-from-bottom-0" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-3 border-b border-border p-6 shrink-0">
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-primary">
-                <svg className="w-6 h-6 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                </svg>
-              </div>
               <div className="flex-1 min-w-0">
                 <h3 className="text-lg font-semibold text-foreground">Create space</h3>
-                <p className="text-sm text-muted-foreground">Add a new space to organize your credentials.</p>
               </div>
               <Button variant="ghost" isIconOnly size="sm" onPress={() => setIsCreateModalOpen(false)} aria-label="Close" className="shrink-0 -mr-2">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
@@ -562,17 +556,14 @@ export function DashboardClient({ spaces, createSpace, deleteSpace, updateSpace 
               <div className="flex-1 overflow-y-auto p-6 space-y-4 overscroll-contain">
                 <TextField name="name" isRequired isInvalid={!!createFieldErrors.name} validationBehavior="aria" className="w-full">
                   <Label className="text-sm font-medium text-foreground mb-2">Space name</Label>
-                  <Input
-                    placeholder="e.g. Client XYZ"
-                    className="h-10"
-                  />
+                  <Input placeholder="e.g. Client XYZ" />
                   {createFieldErrors.name && <FieldError>{createFieldErrors.name}</FieldError>}
                 </TextField>
 
                 <Select name="type" defaultSelectedKey="personal" className="w-full">
                   <Label className="text-sm font-medium text-foreground mb-2">Type</Label>
-                  <Select.Trigger className="bg-card border border-border text-foreground h-10">
-                    <Select.Value className="text-foreground" />
+                  <Select.Trigger>
+                    <Select.Value />
                   </Select.Trigger>
                   <Select.Popover className="bg-popover border border-border shadow-sm">
                     <ListBox className="p-1">
@@ -711,17 +702,14 @@ export function DashboardClient({ spaces, createSpace, deleteSpace, updateSpace 
               <div className="flex-1 overflow-y-auto p-6 space-y-4 overscroll-contain">
                 <TextField name="name" isRequired isInvalid={!!editFieldErrors.name} validationBehavior="aria" className="w-full" defaultValue={editingSpace.name}>
                   <Label className="text-sm font-medium text-foreground mb-2">Space name</Label>
-                  <Input
-                    placeholder="e.g. Client XYZ"
-                    className="h-10"
-                  />
+                  <Input placeholder="e.g. Client XYZ" />
                   {editFieldErrors.name && <FieldError>{editFieldErrors.name}</FieldError>}
                 </TextField>
 
                 <Select name="type" defaultSelectedKey={editingSpace.type} className="w-full">
                   <Label className="text-sm font-medium text-foreground mb-2">Type</Label>
-                  <Select.Trigger className="bg-card border border-border text-foreground h-10">
-                    <Select.Value className="text-foreground" />
+                  <Select.Trigger>
+                    <Select.Value />
                   </Select.Trigger>
                   <Select.Popover className="bg-popover border border-border shadow-sm">
                     <ListBox className="p-1">

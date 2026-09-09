@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button, Dropdown, Input, TextField, Label } from "@heroui/react";
-import { ThemeSwitcher } from "./theme-switcher";
+import { SiteHeader } from "./site-header";
 import { useState, useTransition, useEffect } from "react";
 import { updateProfile } from "@/lib/actions";
 
@@ -85,97 +85,93 @@ export function PrivateShell({
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <header className="sticky top-0 z-40 border-b border-border bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/80">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="flex h-16 items-center justify-between">
-            <div className="flex items-center gap-8">
-              <Link href="/dashboard" className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground text-background text-sm font-bold">V</div>
-                <span className="text-base font-semibold text-foreground">Vaulta</span>
-              </Link>
-              <nav className="hidden md:flex items-center gap-2">
-                <Link href="/dashboard">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className={isSpacesActive ? "text-foreground font-medium" : "text-muted-foreground font-medium"}
-                  >
-                    Spaces
-                  </Button>
-                </Link>
-                <Link href="/">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="text-muted-foreground font-medium"
-                  >
-                    Public site
-                  </Button>
-                </Link>
-              </nav>
-            </div>
-            <div className="flex items-center gap-1">
-              <ThemeSwitcher />
-              <Dropdown>
-                <Button
-                  variant="ghost"
-                  aria-label="User menu"
-                  className="flex items-center gap-2 h-auto py-1 px-2 rounded-xl hover:bg-muted data-[hovered]:bg-muted max-w-[200px] sm:max-w-[240px]"
+      <SiteHeader
+        logoHref="/dashboard"
+        nav={
+          <nav className="hidden md:flex items-center gap-2">
+            <Link href="/dashboard">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={isSpacesActive ? "text-foreground font-medium" : "text-muted-foreground font-medium"}
+              >
+                Spaces
+              </Button>
+            </Link>
+            <Link href="/">
+              <Button variant="ghost" size="sm" className="text-muted-foreground font-medium">
+                Public site
+              </Button>
+            </Link>
+          </nav>
+        }
+        actions={
+          <Dropdown>
+            <Button
+              variant="ghost"
+              aria-label="User menu"
+              className="flex items-center gap-2 h-auto py-1 px-2 rounded-xl hover:bg-muted data-[hovered]:bg-muted max-w-[200px] sm:max-w-[240px]"
+            >
+              <div className="w-8 h-8 rounded-full bg-foreground text-background flex items-center justify-center text-sm font-medium overflow-hidden shrink-0">
+                {user.image ? (
+                  <img src={user.image} alt={user.name || user.email || "User"} className="w-full h-full rounded-full object-cover" />
+                ) : (
+                  (user.name ?? user.email ?? "U").charAt(0).toUpperCase()
+                )}
+              </div>
+              <div className="hidden sm:flex flex-col items-start text-left min-w-0 max-w-[140px]">
+                <span className="text-sm font-medium text-foreground leading-none truncate w-full block">{user.name ?? "User"}</span>
+                <span className="text-xs text-muted-foreground leading-none truncate w-full block">{user.email}</span>
+              </div>
+              <svg className="w-4 h-4 text-muted-foreground shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </Button>
+            <Dropdown.Popover className="bg-popover border border-border shadow-sm rounded-xl min-w-[260px] max-w-[320px]">
+              <Dropdown.Menu aria-label="User menu" className="p-1" onAction={handleAction}>
+                <Dropdown.Item
+                  id="account-header"
+                  textValue="Profile"
+                  isDisabled
+                  className="rounded-xl opacity-100 cursor-default data-[focused]:bg-transparent py-2"
                 >
-                  <div className="w-8 h-8 rounded-full bg-foreground text-background flex items-center justify-center text-sm font-medium overflow-hidden shrink-0">
-                    {user.image ? (
-                      <img src={user.image} alt={user.name || user.email || "User"} className="w-full h-full rounded-full object-cover" />
-                    ) : (
-                      (user.name ?? user.email ?? "U").charAt(0).toUpperCase()
+                  <div className="flex flex-col gap-0.5 min-w-0 max-w-[260px]">
+                    <p className="font-semibold text-foreground truncate text-sm leading-tight">{user.name ?? "User"}</p>
+                    <p className="text-xs text-muted-foreground truncate leading-tight">{user.email}</p>
+                    {createdAt && (
+                      <p className="text-[11px] text-muted-foreground/80 leading-none pt-1">Joined {timeAgo(createdAt)}</p>
                     )}
                   </div>
-                  <div className="hidden sm:flex flex-col items-start text-left min-w-0 max-w-[140px]">
-                    <span className="text-sm font-medium text-foreground leading-none truncate w-full block">{user.name ?? "User"}</span>
-                    <span className="text-xs text-muted-foreground leading-none truncate w-full block">{user.email}</span>
+                </Dropdown.Item>
+                <Dropdown.Item
+                  id="account"
+                  textValue="Account"
+                  className="rounded-lg text-foreground data-[focused]:bg-muted data-[focused]:text-foreground"
+                >
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    <span>Account</span>
                   </div>
-                  <svg className="w-4 h-4 text-muted-foreground shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </Button>
-                <Dropdown.Popover className="bg-popover border border-border shadow-sm rounded-xl min-w-[260px] max-w-[320px]">
-                <Dropdown.Menu aria-label="User menu" className="p-1" onAction={handleAction}>
-                  <Dropdown.Item
-                    id="account-header"
-                    textValue="Profile"
-                    isDisabled
-                    className="rounded-xl opacity-100 cursor-default data-[focused]:bg-transparent py-2"
-                  >
-                    <div className="flex flex-col gap-0.5 min-w-0 max-w-[260px]">
-                      <p className="font-semibold text-foreground truncate text-sm leading-tight">{user.name ?? "User"}</p>
-                      <p className="text-xs text-muted-foreground truncate leading-tight">{user.email}</p>
-                      {createdAt && (
-                        <p className="text-[11px] text-muted-foreground/80 leading-none pt-1">Joined {timeAgo(createdAt)}</p>
-                      )}
-                    </div>
-                  </Dropdown.Item>
-                  <Dropdown.Item id="account" textValue="Account" className="rounded-lg text-foreground data-[focused]:bg-muted data-[focused]:text-foreground">
-                    <div className="flex items-center gap-2">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                      <span>Account</span>
-                    </div>
-                  </Dropdown.Item>
-                  <Dropdown.Item id="logout" textValue="Sign out" className="rounded-lg text-destructive data-[focused]:bg-destructive/10 data-[focused]:text-destructive">
-                    <div className="flex items-center gap-2">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                      </svg>
-                      <span>Sign out</span>
-                    </div>
-                  </Dropdown.Item>
-                </Dropdown.Menu>
-                </Dropdown.Popover>
-              </Dropdown>
-            </div>
-          </div>
-        </div>
-      </header>
+                </Dropdown.Item>
+                <Dropdown.Item
+                  id="logout"
+                  textValue="Sign out"
+                  className="rounded-lg text-destructive data-[focused]:bg-destructive/10 data-[focused]:text-destructive"
+                >
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    <span>Sign out</span>
+                  </div>
+                </Dropdown.Item>
+              </Dropdown.Menu>
+            </Dropdown.Popover>
+          </Dropdown>
+        }
+      />
       <main className="flex flex-1 flex-col">{children}</main>
 
       {isAccountOpen && (
@@ -204,17 +200,17 @@ export function PrivateShell({
 
                 <TextField name="name" className="w-full" value={accountName} onChange={setAccountName}>
                   <Label className="text-sm font-medium text-foreground mb-2">Name</Label>
-                  <Input placeholder="Your name" className="h-10" />
+                  <Input placeholder="Your name" />
                 </TextField>
 
                 <TextField name="image" className="w-full" value={accountImage} onChange={setAccountImage}>
                   <Label className="text-sm font-medium text-foreground mb-2">Avatar image URL</Label>
-                  <Input placeholder="https://..." className="h-10" />
+                  <Input placeholder="https://..." />
                 </TextField>
 
                 <TextField isDisabled className="w-full">
                   <Label className="text-sm font-medium text-foreground mb-2">Email</Label>
-                  <Input value={user.email ?? ""} className="h-10 bg-muted" aria-label="Email" />
+                  <Input value={user.email ?? ""} aria-label="Email" />
                 </TextField>
                 <p className="text-xs text-muted-foreground -mt-2">Email is managed by your provider.</p>
               </div>

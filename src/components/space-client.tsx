@@ -2,9 +2,9 @@
 import { Card, Button, TextField, Input, InputGroup, TextArea, Label, Select, ListBox, Dropdown, Separator, Checkbox, FieldError } from "@heroui/react";
 import { entrySchema, updateEntrySchema } from "@/lib/validators";
 import { useState, useEffect, useRef } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { updateEntry } from "@/lib/actions";
 import { PageHeader } from "@/components/ui/page-header";
-import { CATEGORY_PRESETS, getPresetLogoUrl, findPresetByName } from "@/lib/constants/category-presets";
 import { ICON_OPTIONS as CATEGORY_ICON_OPTIONS, ICON_MAP as CATEGORY_ICON_MAP, COLORS as CATEGORY_COLORS } from "@/lib/constants/icons";
 import {
   LockClosedIcon,
@@ -34,8 +34,6 @@ function CategoryIcon({ icon, className = "w-5 h-5" }: { icon: string | null; cl
   if (Comp) return <Comp className={className} />;
   return null;
 }
-
-const ACCOUNT_CATEGORY_PRESETS = CATEGORY_PRESETS;
 
 type ImportRow = { uid: string; title: string; email: string; password: string; url: string; description: string; category: string };
 
@@ -223,6 +221,11 @@ export function SpaceClient({
   const [isTransferring, setIsTransferring] = useState(false);
   const [entryFormError, setEntryFormError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  // generator → add to space flow: prefill from ?create=1&password= or sessionStorage
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const [genPassword, setGenPassword] = useState<string | null>(null);
+  const [genCreate, setGenCreate] = useState(false);
 
   useEffect(() => {
     if (!isAddOpen && !importOpen && !transferOpen && !isEditSpaceOpen && !deleteTarget && !bulkDeleteOpen) return;
@@ -231,6 +234,8 @@ export function SpaceClient({
       if (e.key === "Escape") {
         setIsAddOpen(false);
         setEditing(null);
+        setGenPassword(null);
+        setGenCreate(false);
         setIsEditSpaceOpen(false);
         setImportOpen(false);
         setTransferOpen(null);
@@ -285,22 +290,13 @@ export function SpaceClient({
           setEditCatKey(c.id);
           setEditCatIcon(c.icon || "");
           setEditCatColor(c.color || CATEGORY_COLORS[0]);
-          setEditCatLogoUrl(c.logoUrl || getPresetLogoUrl(c.name.toLowerCase()) || null);
+          setEditCatLogoUrl(c.logoUrl || null);
           setEditCustomName("");
           return;
         }
       }
-      // try to match by category name to preset or existing category
+      // try to match by category name to existing DB category
       if (editing.category) {
-        const preset = ACCOUNT_CATEGORY_PRESETS.find((p) => p.label.toLowerCase() === editing.category!.toLowerCase() || p.id === editing.category!.toLowerCase());
-        if (preset) {
-          setEditCatKey(preset.id);
-          setEditCatIcon(preset.icon);
-          setEditCatColor(preset.color);
-          setEditCatLogoUrl(preset.logoUrl);
-          setEditCustomName("");
-          return;
-        }
         const existing = allCategories.find((c) => c.name.toLowerCase() === editing.category!.toLowerCase());
         if (existing) {
           setEditCatKey(existing.id);
@@ -326,19 +322,15 @@ export function SpaceClient({
     }
   }, [editing, allCategories]);
 
-  // sync icon/color/logo when create select changes to preset/existing
+  // sync icon/color/logo when category selection changes — DB only
   useEffect(() => {
     if (createCatKey === "none" || createCatKey === "custom") { if (createCatKey === "none") setCreateCatLogoUrl(null); return; }
-    const preset = ACCOUNT_CATEGORY_PRESETS.find((p) => p.id === createCatKey);
-    if (preset) { setCreateCatIcon(preset.icon); setCreateCatColor(preset.color); setCreateCatLogoUrl(preset.logoUrl); return; }
     const cat = allCategories.find((c) => c.id === createCatKey);
     if (cat) { setCreateCatIcon(cat.icon || ""); setCreateCatColor(cat.color || CATEGORY_COLORS[0]); setCreateCatLogoUrl(cat.logoUrl || null); }
   }, [createCatKey, allCategories]);
 
   useEffect(() => {
     if (editCatKey === "none" || editCatKey === "custom") { if (editCatKey === "none") setEditCatLogoUrl(null); return; }
-    const preset = ACCOUNT_CATEGORY_PRESETS.find((p) => p.id === editCatKey);
-    if (preset) { setEditCatIcon(preset.icon); setEditCatColor(preset.color); setEditCatLogoUrl(preset.logoUrl); return; }
     const cat = allCategories.find((c) => c.id === editCatKey);
     if (cat) { setEditCatIcon(cat.icon || ""); setEditCatColor(cat.color || CATEGORY_COLORS[0]); setEditCatLogoUrl(cat.logoUrl || null); }
   }, [editCatKey, allCategories]);
@@ -360,6 +352,35 @@ export function SpaceClient({
   useEffect(() => {
     localStorage.setItem("vaulta:accountsView", viewMode);
   }, [viewMode]);
+
+  // generator → add to space: auto-open create modal with prefilled password + title autofocus
+  useEffect(() => {
+    const create = searchParams.get("create") === "1" || searchParams.get("gen") === "1";
+    let pwd = searchParams.get("password");
+    if (!pwd) {
+      try {
+        const stored = sessionStorage.getItem("vaulta:genPassword");
+        if (stored) pwd = stored;
+      } catch {}
+    }
+    if (create) {
+      if (pwd !== null && pwd !== "") setGenPassword(pwd);
+      setGenCreate(true);
+      if (!isAddOpen && !editing) setIsAddOpen(true);
+      // clean URL (keep pathname, drop gen params)
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("create");
+      params.delete("gen");
+      params.delete("password");
+      const qs = params.toString();
+      router.replace(qs ? `${window.location.pathname}?${qs}` : window.location.pathname);
+      try {
+        // keep for this modal session, clear after read to avoid reuse
+        if (pwd) sessionStorage.removeItem("vaulta:genPassword");
+      } catch {}
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   // Derived filtered & sorted list — parity with dashboard Spaces filtering
   const filteredEntries = space.entries
@@ -599,7 +620,7 @@ export function SpaceClient({
               placeholder="Search accounts..."
               value={search}
               onChange={(e) => setSearch((e.target as HTMLInputElement).value)}
-              className="pl-10 h-10 border-1 w-full"
+              className="pl-10 w-full"
               aria-label="Search accounts"
             />
           </div>
@@ -639,8 +660,8 @@ export function SpaceClient({
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-muted-foreground">Category</Label>
                 <Select selectedKey={categoryFilter} onSelectionChange={(k) => setCategoryFilter(String(k))} className="w-full">
-                  <Select.Trigger className="bg-card border border-border text-foreground h-9">
-                    <Select.Value className="text-foreground" />
+                  <Select.Trigger>
+                    <Select.Value />
                   </Select.Trigger>
                   <Select.Popover className="bg-popover border border-border shadow-sm">
                     <ListBox className="p-1">
@@ -657,8 +678,8 @@ export function SpaceClient({
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-muted-foreground">Sort by</Label>
                 <Select selectedKey={sortBy} onSelectionChange={(k) => setSortBy(String(k))} className="w-full">
-                  <Select.Trigger className="bg-card border border-border text-foreground h-9">
-                    <Select.Value className="text-foreground" />
+                  <Select.Trigger>
+                    <Select.Value />
                   </Select.Trigger>
                   <Select.Popover className="bg-popover border border-border shadow-sm">
                     <ListBox className="p-1">
@@ -718,13 +739,11 @@ export function SpaceClient({
                   </div>
                 ) : (
                 <div className={`grid mb-8 ${viewMode === "compact" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"}`}>{filteredEntries.map((e) => {
-                  const presetMatch = (name: string) => ACCOUNT_CATEGORY_PRESETS.find((p) => p.label.toLowerCase() === name.toLowerCase() || p.id === name.toLowerCase());
                   const displayCat: Category | { name: string; icon: string | null; color: string | null; logoUrl: string | null } | null =
-                    (e as unknown as { categoryRef?: Category | null }).categoryRef ?? (e.category ? { name: e.category, icon: e.icon, color: e.color, logoUrl: (e as unknown as { logoUrl?: string | null }).logoUrl ?? presetMatch(e.category)?.logoUrl ?? null } : null);
-                  const catColor = displayCat?.color || presetMatch(displayCat?.name ?? "")?.color || CATEGORY_COLORS[0];
-                  const catIcon = displayCat?.icon || presetMatch(displayCat?.name ?? "")?.icon || null;
-                  const presetLogo = displayCat ? presetMatch(displayCat.name)?.logoUrl ?? getPresetLogoUrl(displayCat.name.toLowerCase()) : null;
-                  const catLogo = presetLogo || (displayCat as unknown as { logoUrl?: string | null })?.logoUrl || null;
+                    (e as unknown as { categoryRef?: Category | null }).categoryRef ?? (e.category ? { name: e.category, icon: e.icon, color: e.color, logoUrl: (e as unknown as { logoUrl?: string | null }).logoUrl ?? null } : null);
+                  const catColor = displayCat?.color || CATEGORY_COLORS[0];
+                  const catIcon = displayCat?.icon || null;
+                  const catLogo = (displayCat as unknown as { logoUrl?: string | null })?.logoUrl || null;
                   const isCompact = viewMode === "compact";
                   return (
                   <Card
@@ -750,7 +769,7 @@ export function SpaceClient({
                           <div className="relative w-full" onClick={(ev) => ev.stopPropagation()}>
                             {copiedId === e.id && <span className="absolute -top-7 right-0 z-10 text-xs font-medium bg-foreground text-background px-2 py-1 rounded-md shadow-sm pointer-events-none">Copied</span>}
                             <InputGroup fullWidth>
-                              <InputGroup.Input readOnly value={showPasswords[e.id] ? e.password : "••••••••••"} aria-label="Password" className="w-full font-mono text-sm h-8" />
+                              <InputGroup.Input readOnly value={showPasswords[e.id] ? e.password : "••••••••••"} aria-label="Password" className="w-full font-mono text-sm" />
                               <InputGroup.Suffix className="pe-0">
                                 <Button isIconOnly size="sm" variant="ghost" aria-label={showPasswords[e.id] ? "Hide password" : "Show password"} onPress={() => setShowPasswords((p) => ({ ...p, [e.id]: !p[e.id] }))} className="h-8 w-8 text-muted-foreground hover:text-foreground">{showPasswords[e.id] ? <EyeSlashIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}</Button>
                                 <Button isIconOnly size="sm" variant="ghost" aria-label={copiedId === e.id ? "Copied" : "Copy password"} onPress={async () => { await navigator.clipboard.writeText(e.password); setCopiedId(e.id); window.setTimeout(() => setCopiedId((cur) => (cur === e.id ? null : cur)), 1500); }} className={`h-8 w-8 ${copiedId === e.id ? "text-success" : "text-muted-foreground hover:text-foreground"}`}>{copiedId === e.id ? <CheckIcon className="w-4 h-4" /> : <ClipboardDocumentIcon className="w-4 h-4" />}</Button>
@@ -847,19 +866,41 @@ export function SpaceClient({
           )}
 
       {isAddOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-foreground/40 backdrop-blur-[2px] overflow-y-auto" onClick={() => { setIsAddOpen(false); setEditing(null); }} role="dialog" aria-modal="true">
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-foreground/40 backdrop-blur-[2px] overflow-y-auto"
+          onClick={() => {
+            setIsAddOpen(false);
+            setEditing(null);
+            setGenPassword(null);
+            setGenCreate(false);
+          }}
+          role="dialog"
+          aria-modal="true"
+        >
           <div className="bg-card rounded-t-2xl sm:rounded-2xl border-t sm:border border-border shadow-sm w-full sm:max-w-lg max-h-[90dvh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-4 sm:py-5 border-b border-border shrink-0">
               <h3 className="text-lg font-semibold text-foreground">{editing ? "Edit account" : "Add account"}</h3>
-              <Button variant="ghost" isIconOnly size="sm" onPress={() => { setIsAddOpen(false); setEditing(null); }} aria-label="Close" className="shrink-0 -mr-1">
+              <Button
+                variant="ghost"
+                isIconOnly
+                size="sm"
+                onPress={() => {
+                  setIsAddOpen(false);
+                  setEditing(null);
+                  setGenPassword(null);
+                  setGenCreate(false);
+                }}
+                aria-label="Close"
+                className="shrink-0 -mr-1"
+              >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </Button>
             </div>
-            <form noValidate key={editing?.id ?? "new"} action={async (fd) => {
+            <form noValidate key={editing?.id ?? `new-${genPassword ?? ""}-${genCreate ? "gen" : ""}`} action={async (fd) => {
                 setEntryFormError(null);
                 setFieldErrors({});
                 try {
-                  // inject category fields from state (reference from spaces) — now with dedicated brand logos
+                  // inject category fields from state — DB only
                   if (editing) {
                     fd.set("entryId", editing.id);
                     if (editCatKey === "none") {
@@ -871,15 +912,8 @@ export function SpaceClient({
                       fd.set("icon", editCatIcon);
                       fd.set("color", editCatColor);
                       fd.set("logoUrl", editCatLogoUrl || "");
-                    } else if (ACCOUNT_CATEGORY_PRESETS.some((p) => p.id === editCatKey)) {
-                      const preset = ACCOUNT_CATEGORY_PRESETS.find((p) => p.id === editCatKey)!;
-                      fd.set("category", preset.label);
-                      fd.set("icon", editCatIcon || preset.icon);
-                      fd.set("color", editCatColor || preset.color);
-                      fd.set("logoUrl", editCatLogoUrl || preset.logoUrl);
-                      fd.delete("categoryId");
                     } else {
-                      // existing category id
+                      // existing category id from DB
                       fd.set("categoryId", editCatKey);
                       fd.delete("category"); fd.delete("customCategory");
                       fd.set("icon", editCatIcon);
@@ -919,12 +953,6 @@ export function SpaceClient({
                       fd.set("icon", createCatIcon);
                       fd.set("color", createCatColor);
                       fd.set("logoUrl", createCatLogoUrl || "");
-                    } else if (ACCOUNT_CATEGORY_PRESETS.some((p) => p.id === createCatKey)) {
-                      const preset = ACCOUNT_CATEGORY_PRESETS.find((p) => p.id === createCatKey)!;
-                      fd.set("category", preset.label);
-                      fd.set("icon", createCatIcon || preset.icon);
-                      fd.set("color", createCatColor || preset.color);
-                      fd.set("logoUrl", createCatLogoUrl || preset.logoUrl);
                     } else {
                       fd.set("categoryId", createCatKey);
                       fd.set("icon", createCatIcon);
@@ -953,7 +981,10 @@ export function SpaceClient({
                     }
                     await createEntry(fd);
                   }
-                  setIsAddOpen(false); setEditing(null);
+                  setIsAddOpen(false);
+                  setEditing(null);
+                  setGenPassword(null);
+                  setGenCreate(false);
                   setFieldErrors({});
                 } catch (e) {
                   const msg = e instanceof Error ? e.message : "Validation failed";
@@ -974,7 +1005,7 @@ export function SpaceClient({
                 <input type="hidden" name="spaceId" value={space.id} />
                 <TextField name="title" defaultValue={editing?.title ?? ""} isInvalid={!!fieldErrors.title} validationBehavior="aria" className="w-full">
                   <Label className="text-sm font-medium text-foreground mb-2">Title <span className="text-muted-foreground font-normal">(unique)</span></Label>
-                  <Input placeholder="e.g. Gmail, AWS root" className="h-10" />
+                  <Input placeholder="e.g. Gmail, AWS root" autoFocus={genCreate && !editing} />
                   {fieldErrors.title && <FieldError>{fieldErrors.title}</FieldError>}
                 </TextField>
 
@@ -985,34 +1016,21 @@ export function SpaceClient({
                   className="w-full"
                 >
                   <Label className="text-sm font-medium text-foreground mb-2">Category</Label>
-                  <Select.Trigger className="bg-card border border-border text-foreground h-10">
-                    <Select.Value className="text-foreground" />
+                  <Select.Trigger>
+                    <Select.Value />
                   </Select.Trigger>
                   <Select.Popover className="bg-popover border border-border shadow-sm">
                     <ListBox className="p-1">
                       <ListBox.Item id="none" className="text-popover-foreground data-[focused]:bg-muted">No category</ListBox.Item>
                       <ListBox.Item id="custom" className="text-popover-foreground data-[focused]:bg-muted">Custom…</ListBox.Item>
-                      {ACCOUNT_CATEGORY_PRESETS.map((p) => (
-                        <ListBox.Item key={p.id} id={p.id} textValue={p.label} className="text-popover-foreground data-[focused]:bg-muted">
+                      {allCategories.map((c) => (
+                        <ListBox.Item key={c.id} id={c.id} textValue={c.name} className="text-popover-foreground data-[focused]:bg-muted">
                           <div className="flex items-center gap-2">
-                            <img src={p.logoUrl} alt={p.label} className="w-4 h-4 object-contain rounded-sm bg-white/10" onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = "none")} />
-                            <span>{p.label}</span>
+                            {c.logoUrl ? <img src={c.logoUrl} alt={c.name} className="w-4 h-4 object-contain" /> : c.icon ? <CategoryIcon icon={c.icon} className="w-4 h-4" /> : null}
+                            <span>{c.name}</span>
                           </div>
                         </ListBox.Item>
                       ))}
-                      {allCategories.length > 0 && (
-                        <>
-                          <ListBox.Item id="__sep" isDisabled className="opacity-0 h-px bg-border my-1 p-0" textValue="separator">---</ListBox.Item>
-                          {allCategories.map((c) => (
-                            <ListBox.Item key={c.id} id={c.id} textValue={c.name} className="text-popover-foreground data-[focused]:bg-muted">
-                              <div className="flex items-center gap-2">
-                                {c.logoUrl ? <img src={c.logoUrl} alt={c.name} className="w-4 h-4 object-contain" /> : c.icon ? <CategoryIcon icon={c.icon} className="w-4 h-4" /> : null}
-                                <span>{c.name}</span>
-                              </div>
-                            </ListBox.Item>
-                          ))}
-                        </>
-                      )}
                     </ListBox>
                   </Select.Popover>
                 </Select>
@@ -1020,7 +1038,7 @@ export function SpaceClient({
                 {(editing ? editCatKey : createCatKey) === "custom" && (
                   <TextField className="w-full" value={editing ? editCustomName : createCustomName} onChange={(v) => (editing ? setEditCustomName(v as string) : setCreateCustomName(v as string))}>
                     <Label className="text-sm font-medium text-foreground mb-2">Custom category name</Label>
-                    <Input placeholder="e.g. My Bank, Work SSO" className="h-10" />
+                    <Input placeholder="e.g. My Bank, Work SSO" />
                   </TextField>
                 )}
 
@@ -1072,7 +1090,7 @@ export function SpaceClient({
                           ) : (editing ? editCatIcon : createCatIcon) ? (
                             <CategoryIcon icon={editing ? editCatIcon : createCatIcon} className="w-4 h-4 text-white" />
                           ) : (
-                            <span className="text-xs font-semibold">{(editing ? editCustomName || ACCOUNT_CATEGORY_PRESETS.find((p) => p.id === editCatKey)?.label || "Aa" : createCustomName || ACCOUNT_CATEGORY_PRESETS.find((p) => p.id === createCatKey)?.label || "Aa").charAt(0).toUpperCase()}</span>
+                            <span className="text-xs font-semibold">{(editing ? editCustomName || allCategories.find((c) => c.id === editCatKey)?.name || "Aa" : createCustomName || allCategories.find((c) => c.id === createCatKey)?.name || "Aa").charAt(0).toUpperCase()}</span>
                           )}
                         </div>
                         <span className="text-xs text-muted-foreground">Preview — {(editing ? editCatLogoUrl : createCatLogoUrl) ? "brand logo from public" : "like Spaces"}</span>
@@ -1083,17 +1101,25 @@ export function SpaceClient({
 
                 <TextField name="email" isRequired defaultValue={editing?.email ?? ""} isInvalid={!!fieldErrors.email} validationBehavior="aria" className="w-full">
                   <Label className="text-sm font-medium text-foreground mb-2">Account / Username</Label>
-                  <Input placeholder="username, email or account name" className="h-10" />
+                  <Input placeholder="username, email or account name" />
                   {fieldErrors.email && <FieldError>{fieldErrors.email}</FieldError>}
                 </TextField>
-                <TextField name="password" isRequired={!editing} type="password" isInvalid={!!fieldErrors.password} validationBehavior="aria" className="w-full">
+                <TextField
+                  name="password"
+                  isRequired={!editing}
+                  type="password"
+                  isInvalid={!!fieldErrors.password}
+                  validationBehavior="aria"
+                  className="w-full"
+                  defaultValue={!editing && genPassword ? genPassword : ""}
+                >
                   <Label className="text-sm font-medium text-foreground mb-2">Password {editing && <span className="text-muted-foreground font-normal">(leave blank to keep)</span>}</Label>
-                  <Input placeholder={editing ? "•••••••• (unchanged)" : "••••••••"} type="password" className="h-10" />
+                  <Input placeholder={editing ? "•••••••• (unchanged)" : "••••••••"} type="password" />
                   {fieldErrors.password && <FieldError>{fieldErrors.password}</FieldError>}
                 </TextField>
                 <TextField name="url" type="url" defaultValue={editing?.url ?? ""} isInvalid={!!fieldErrors.url} validationBehavior="aria" className="w-full">
                   <Label className="text-sm font-medium text-foreground mb-2">URL (optional)</Label>
-                  <Input placeholder="https://..." type="url" className="h-10" />
+                  <Input placeholder="https://..." type="url" />
                   {fieldErrors.url && <FieldError>{fieldErrors.url}</FieldError>}
                 </TextField>
                 <TextField name="description" defaultValue={editing?.description ?? ""} isInvalid={!!fieldErrors.description} validationBehavior="aria" className="w-full">
@@ -1103,7 +1129,19 @@ export function SpaceClient({
                 </TextField>
               </div>
               <div className="flex gap-3 p-4 sm:p-6 pt-4 border-t border-border shrink-0 bg-card">
-                <Button variant="tertiary" type="button" onPress={() => { setIsAddOpen(false); setEditing(null); }} className="flex-1 h-10">Cancel</Button>
+                <Button
+                  variant="tertiary"
+                  type="button"
+                  onPress={() => {
+                    setIsAddOpen(false);
+                    setEditing(null);
+                    setGenPassword(null);
+                    setGenCreate(false);
+                  }}
+                  className="flex-1 h-10"
+                >
+                  Cancel
+                </Button>
                 <Button type="submit" variant="primary" className="flex-1 h-10 font-medium">{editing ? "Save changes" : "Save account"}</Button>
               </div>
             </form>
@@ -1125,8 +1163,8 @@ export function SpaceClient({
             </div>
             <Select selectedKey={transferTarget} onSelectionChange={(k) => setTransferTarget(String(k))} className="w-full">
               <Label className="text-sm font-medium text-foreground mb-2">Target space</Label>
-              <Select.Trigger className="bg-card border border-border text-foreground h-10">
-                <Select.Value className="text-foreground" />
+              <Select.Trigger>
+                <Select.Value />
               </Select.Trigger>
               <Select.Popover className="bg-popover border border-border shadow-sm">
                 <ListBox className="p-1">
@@ -1224,12 +1262,12 @@ export function SpaceClient({
                       <tbody className="divide-y divide-border">
                         {importRows.map((r) => (
                           <tr key={r.uid} className="hover:bg-muted/20">
-                            <td className="px-2 py-1.5"><Input value={r.title} onChange={(e) => updateImportRow(r.uid, { title: (e.target as HTMLInputElement).value })} placeholder="Title" className="h-8 text-sm" /></td>
-                            <td className="px-2 py-1.5"><Input value={r.email} onChange={(e) => updateImportRow(r.uid, { email: (e.target as HTMLInputElement).value })} placeholder="username" className="h-8 text-sm" /></td>
-                            <td className="px-2 py-1.5"><Input value={r.password} onChange={(e) => updateImportRow(r.uid, { password: (e.target as HTMLInputElement).value })} placeholder="••••" className="h-8 text-sm" /></td>
-                            <td className="px-2 py-1.5"><Input value={r.url} onChange={(e) => updateImportRow(r.uid, { url: (e.target as HTMLInputElement).value })} placeholder="https://" className="h-8 text-sm" /></td>
-                            <td className="px-2 py-1.5"><Input value={r.description} onChange={(e) => updateImportRow(r.uid, { description: (e.target as HTMLInputElement).value })} placeholder="note" className="h-8 text-sm" /></td>
-                            <td className="px-2 py-1.5"><Input value={r.category} onChange={(e) => updateImportRow(r.uid, { category: (e.target as HTMLInputElement).value })} placeholder="gmail" className="h-8 text-sm" /></td>
+                            <td className="px-2 py-1.5"><Input value={r.title} onChange={(e) => updateImportRow(r.uid, { title: (e.target as HTMLInputElement).value })} placeholder="Title" className="text-sm" /></td>
+                            <td className="px-2 py-1.5"><Input value={r.email} onChange={(e) => updateImportRow(r.uid, { email: (e.target as HTMLInputElement).value })} placeholder="username" className="text-sm" /></td>
+                            <td className="px-2 py-1.5"><Input value={r.password} onChange={(e) => updateImportRow(r.uid, { password: (e.target as HTMLInputElement).value })} placeholder="••••" className="text-sm" /></td>
+                            <td className="px-2 py-1.5"><Input value={r.url} onChange={(e) => updateImportRow(r.uid, { url: (e.target as HTMLInputElement).value })} placeholder="https://" className="text-sm" /></td>
+                            <td className="px-2 py-1.5"><Input value={r.description} onChange={(e) => updateImportRow(r.uid, { description: (e.target as HTMLInputElement).value })} placeholder="note" className="text-sm" /></td>
+                            <td className="px-2 py-1.5"><Input value={r.category} onChange={(e) => updateImportRow(r.uid, { category: (e.target as HTMLInputElement).value })} placeholder="gmail" className="text-sm" /></td>
                             <td className="px-2 py-1.5"><Button size="sm" variant="tertiary" onPress={() => setImportRows((p) => p.filter((x) => x.uid !== r.uid))} className="h-8">Remove</Button></td>
                           </tr>
                         ))}
