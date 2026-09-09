@@ -19,6 +19,8 @@ import {
   ExclamationTriangleIcon,
   ArrowUpTrayIcon,
   ArrowDownTrayIcon,
+  Squares2X2Icon,
+  ListBulletIcon,
 } from "@heroicons/react/24/outline";
 import { FunnelIcon } from "@heroicons/react/24/solid";
 
@@ -210,6 +212,8 @@ export function SpaceClient({
   const [filterOpen, setFilterOpen] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("updated");
+  type ViewMode = "comfortable" | "compact";
+  const [viewMode, setViewMode] = useState<ViewMode>("comfortable");
 
   // entry context menu + confirm modals
   const [entryCtx, setEntryCtx] = useState<{ id: string; x: number; y: number } | null>(null);
@@ -349,6 +353,13 @@ export function SpaceClient({
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
   }, [filterOpen]);
+  useEffect(() => {
+    const v = localStorage.getItem("vaulta:accountsView") as ViewMode | null;
+    if (v === "compact" || v === "comfortable") setViewMode(v);
+  }, []);
+  useEffect(() => {
+    localStorage.setItem("vaulta:accountsView", viewMode);
+  }, [viewMode]);
 
   // Derived filtered & sorted list — parity with dashboard Spaces filtering
   const filteredEntries = space.entries
@@ -514,94 +525,104 @@ export function SpaceClient({
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 py-6 sm:py-8">
-      <PageHeader
-        breadcrumbs={[
-          { label: "Spaces", href: "/dashboard" },
-          { label: space.name },
-        ]}
-        title={space.name}
-        description={space.description?.trim() ? space.description : `Manage credentials in this ${space.type} space.`}
-        badge={{ label: space.type }}
-        action={
-          <div className="flex items-center gap-2">
-            <Button onPress={() => { setEditing(null); setIsAddOpen(true); }} className="bg-primary hover:bg-primary-hover text-primary-foreground font-medium h-9">+ Account</Button>
-            <Dropdown>
-              <Button isIconOnly variant="tertiary" size="sm" aria-label="Account actions" className="h-9 w-9 border border-border bg-card">
-                <EllipsisVerticalIcon className="w-5 h-5" />
-              </Button>
-              <Dropdown.Popover className="bg-popover border border-border shadow-sm rounded-xl min-w-[200px]">
-                <Dropdown.Menu
-                  aria-label="Account actions"
-                  className="p-1"
-                  onAction={(key) => {
-                    if (key === "export") handleExport();
-                    if (key === "import") setImportOpen(true);
-                    if (key === "bulk-transfer" && selected.size > 0) setTransferOpen({ ids: Array.from(selected) });
-                    if (key === "bulk-delete" && selected.size > 0) setBulkDeleteOpen(true);
-                  }}
-                >
-                  {selected.size > 0 && (
-                    <>
-                      <Dropdown.Item id="bulk-transfer" textValue="Transfer selected" className="rounded-lg text-foreground data-[focused]:bg-muted">
-                        <div className="flex items-center gap-2">
-                          <ArrowsRightLeftIcon className="w-4 h-4" />
-                          <span>Transfer ({selected.size})</span>
-                        </div>
-                      </Dropdown.Item>
-                      <Dropdown.Item id="bulk-delete" textValue="Delete selected" className="rounded-lg text-destructive data-[focused]:bg-destructive/10 data-[focused]:text-destructive">
-                        <div className="flex items-center gap-2">
-                          <TrashIcon className="w-4 h-4" />
-                          <span>Delete ({selected.size})</span>
-                        </div>
-                      </Dropdown.Item>
-                      <Separator className="my-1 bg-border" />
-                    </>
-                  )}
-                  <Dropdown.Item id="export" textValue="Export txt" className="rounded-lg text-foreground data-[focused]:bg-muted flex items-center gap-2">
-                    <div className="flex items-center gap-2">
-                      <ArrowDownTrayIcon className="w-4 h-4" />
-                      <span>Export txt</span>
-                    </div>
-                  </Dropdown.Item>
-                  <Dropdown.Item id="import" textValue="Import txt" className="rounded-lg text-foreground data-[focused]:bg-muted flex items-center gap-2">
-                    <div className="flex items-center gap-2">
-                      <ArrowUpTrayIcon className="w-4 h-4" />
-                      <span>Import txt</span>
-                    </div>
-                  </Dropdown.Item>
-                </Dropdown.Menu>
-              </Dropdown.Popover>
-            </Dropdown>
-          </div>
-        }
-      />
+      {/* Sticky header + toolbar */}
+      <div className="sticky top-[65px] z-20 -mx-4 sm:-mx-6 px-4 sm:px-6 pt-2 pb-4 mb-2 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border/50">
+        <PageHeader
+          breadcrumbs={[
+            { label: "Spaces", href: "/dashboard" },
+            { label: space.name },
+          ]}
+          title={space.name}
+          description={space.description?.trim() ? space.description : `Manage credentials in this ${space.type} space.`}
+          badge={{ label: space.type }}
+          action={
+            <div className="flex items-center gap-2">
+              <Button onPress={() => { setEditing(null); setIsAddOpen(true); }} className="bg-primary hover:bg-primary-hover text-primary-foreground font-medium h-9">+ Account</Button>
+              <Dropdown>
+                <Button isIconOnly variant="tertiary" size="sm" aria-label="Account actions" className="h-9 w-9 border border-border bg-card">
+                  <EllipsisVerticalIcon className="w-5 h-5" />
+                </Button>
+                <Dropdown.Popover className="bg-popover border border-border shadow-sm rounded-xl min-w-[200px]">
+                  <Dropdown.Menu
+                    aria-label="Account actions"
+                    className="p-1"
+                    onAction={(key) => {
+                      if (key === "export") handleExport();
+                      if (key === "import") setImportOpen(true);
+                      if (key === "bulk-transfer" && selected.size > 0) setTransferOpen({ ids: Array.from(selected) });
+                      if (key === "bulk-delete" && selected.size > 0) setBulkDeleteOpen(true);
+                    }}
+                  >
+                    {selected.size > 0 && (
+                      <>
+                        <Dropdown.Item id="bulk-transfer" textValue="Transfer selected" className="rounded-lg text-foreground data-[focused]:bg-muted">
+                          <div className="flex items-center gap-2">
+                            <ArrowsRightLeftIcon className="w-4 h-4" />
+                            <span>Transfer ({selected.size})</span>
+                          </div>
+                        </Dropdown.Item>
+                        <Dropdown.Item id="bulk-delete" textValue="Delete selected" className="rounded-lg text-destructive data-[focused]:bg-destructive/10 data-[focused]:text-destructive">
+                          <div className="flex items-center gap-2">
+                            <TrashIcon className="w-4 h-4" />
+                            <span>Delete ({selected.size})</span>
+                          </div>
+                        </Dropdown.Item>
+                        <Separator className="my-1 bg-border" />
+                      </>
+                    )}
+                    <Dropdown.Item id="export" textValue="Export txt" className="rounded-lg text-foreground data-[focused]:bg-muted flex items-center gap-2">
+                      <div className="flex items-center gap-2">
+                        <ArrowDownTrayIcon className="w-4 h-4" />
+                        <span>Export txt</span>
+                      </div>
+                    </Dropdown.Item>
+                    <Dropdown.Item id="import" textValue="Import txt" className="rounded-lg text-foreground data-[focused]:bg-muted flex items-center gap-2">
+                      <div className="flex items-center gap-2">
+                        <ArrowUpTrayIcon className="w-4 h-4" />
+                        <span>Import txt</span>
+                      </div>
+                    </Dropdown.Item>
+                  </Dropdown.Menu>
+                </Dropdown.Popover>
+              </Dropdown>
+            </div>
+          }
+        />
 
-      {/* Search + Filter — parity with dashboard, outside any Card */}
-      <div className="mb-6 flex gap-3 items-center">
-        <div className="flex-1 relative min-w-0">
-          <svg className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <Input
-            placeholder="Search accounts..."
-            value={search}
-            onChange={(e) => setSearch((e.target as HTMLInputElement).value)}
-            className="pl-10 h-10 border-1 w-full"
-            aria-label="Search accounts"
-          />
-        </div>
-        <div className="relative shrink-0" data-filter-trigger>
-          <Button
-            variant="tertiary"
-            onPress={() => setFilterOpen((v) => !v)}
-            className="h-10 px-4 gap-2 bg-card border border-border shadow-none rounded-xl text-foreground hover:bg-muted shrink-0"
-            aria-expanded={filterOpen}
-            aria-controls="filter-pane-accounts"
-          >
-            <FunnelIcon className="w-4 h-4" />
-            <span className="hidden sm:inline">Filters</span>
-            {activeFilterCount > 0 && <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold">{activeFilterCount}</span>}
-          </Button>
+        {/* Search + Filter + View toggle — sticky */}
+        <div className="flex gap-2 sm:gap-3 items-center">
+          <div className="flex-1 relative min-w-0">
+            <svg className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <Input
+              placeholder="Search accounts..."
+              value={search}
+              onChange={(e) => setSearch((e.target as HTMLInputElement).value)}
+              className="pl-10 h-10 border-1 w-full"
+              aria-label="Search accounts"
+            />
+          </div>
+          <div className="flex items-center rounded-xl border border-border bg-card p-1 shrink-0">
+            <button aria-label="Comfortable view" aria-pressed={viewMode === "comfortable"} onClick={() => setViewMode("comfortable")} className={`h-8 w-8 rounded-lg flex items-center justify-center transition-colors ${viewMode === "comfortable" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`} title="Comfortable">
+              <Squares2X2Icon className="w-4 h-4" />
+            </button>
+            <button aria-label="Compact view" aria-pressed={viewMode === "compact"} onClick={() => setViewMode("compact")} className={`h-8 w-8 rounded-lg flex items-center justify-center transition-colors ${viewMode === "compact" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`} title="Compact">
+              <ListBulletIcon className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="relative shrink-0" data-filter-trigger>
+            <Button
+              variant="tertiary"
+              onPress={() => setFilterOpen((v) => !v)}
+              className="h-10 px-4 gap-2 bg-card border border-border shadow-none rounded-xl text-foreground hover:bg-muted shrink-0"
+              aria-expanded={filterOpen}
+              aria-controls="filter-pane-accounts"
+            >
+              <FunnelIcon className="w-4 h-4" />
+              <span className="hidden sm:inline">Filters</span>
+              {activeFilterCount > 0 && <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold">{activeFilterCount}</span>}
+            </Button>
           {filterOpen && (
             <div
               id="filter-pane-accounts"
@@ -653,6 +674,7 @@ export function SpaceClient({
           )}
         </div>
       </div>
+      </div>
 
       {space.entries.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20">
@@ -695,7 +717,7 @@ export function SpaceClient({
                     <Button variant="tertiary" onPress={() => { setSearch(""); setCategoryFilter("all"); setSortBy("updated"); }}>Clear filters</Button>
                   </div>
                 ) : (
-                <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-8">{filteredEntries.map((e) => {
+                <div className={`grid gap-3 mb-8 ${viewMode === "compact" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"}`}>{filteredEntries.map((e) => {
                   const presetMatch = (name: string) => ACCOUNT_CATEGORY_PRESETS.find((p) => p.label.toLowerCase() === name.toLowerCase() || p.id === name.toLowerCase());
                   const displayCat: Category | { name: string; icon: string | null; color: string | null; logoUrl: string | null } | null =
                     (e as unknown as { categoryRef?: Category | null }).categoryRef ?? (e.category ? { name: e.category, icon: e.icon, color: e.color, logoUrl: (e as unknown as { logoUrl?: string | null }).logoUrl ?? presetMatch(e.category)?.logoUrl ?? null } : null);
@@ -703,134 +725,72 @@ export function SpaceClient({
                   const catIcon = displayCat?.icon || presetMatch(displayCat?.name ?? "")?.icon || null;
                   const presetLogo = displayCat ? presetMatch(displayCat.name)?.logoUrl ?? getPresetLogoUrl(displayCat.name.toLowerCase()) : null;
                   const catLogo = presetLogo || (displayCat as unknown as { logoUrl?: string | null })?.logoUrl || null;
+                  const isCompact = viewMode === "compact";
                   return (
                   <Card
                     key={e.id}
-                    className="w-full shadow-none hover:scale-102 duration-500 transition-scale rounded-2xl group cursor-pointer"
+                    className="w-full shadow-none hover:scale-[1.02] duration-300 transition-transform rounded-2xl group cursor-pointer"
                     onContextMenu={(e2) => { e2.preventDefault(); setEntryCtx({ id: e.id, x: e2.clientX, y: e2.clientY }); }}
                   >
-                    <Card.Content className="p-2 flex flex-col gap-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-2" onClick={(ev) => ev.stopPropagation()}>
-                          <Checkbox
-                            isSelected={selected.has(e.id)}
-                            onChange={() => toggleSelect(e.id)}
-                            aria-label="Select account"
-                            className="shrink-0"
-                          >
-                            <Checkbox.Content>
-                              <Checkbox.Control>
-                                <Checkbox.Indicator />
-                              </Checkbox.Control>
-                            </Checkbox.Content>
-                          </Checkbox>
-                          <div className="w-10 h-10 rounded-md flex items-center justify-center shrink-0 text-white" style={{ backgroundColor: catColor }}>
-                            {catLogo ? (
-                              <img src={catLogo} alt={displayCat!.name} className="w-5 h-5 object-contain" onError={(ev) => { (ev.currentTarget as HTMLImageElement).style.display = "none"; }} />
-                            ) : catIcon ? <CategoryIcon icon={catIcon} className="w-5 h-5 text-white" /> : <span className="font-bold text-sm">{(e.title ?? e.email).charAt(0).toUpperCase()}</span>}
+                    <Card.Content className={isCompact ? "p-3 flex items-center gap-3" : "p-2 flex flex-col gap-3"}>
+                      {isCompact ? (
+                        <>
+                          <div className="flex items-center gap-2 shrink-0" onClick={(ev) => ev.stopPropagation()}>
+                            <Checkbox isSelected={selected.has(e.id)} onChange={() => toggleSelect(e.id)} aria-label="Select account" className="shrink-0"><Checkbox.Content><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control></Checkbox.Content></Checkbox>
+                            <div className="w-8 h-8 rounded-md flex items-center justify-center shrink-0 text-white" style={{ backgroundColor: catColor }}>
+                              {catLogo ? <img src={catLogo} alt={displayCat!.name} className="w-4 h-4 object-contain" onError={(ev) => { (ev.currentTarget as HTMLImageElement).style.display = "none"; }} /> : catIcon ? <CategoryIcon icon={catIcon} className="w-4 h-4 text-white" /> : <span className="font-bold text-xs">{(e.title ?? e.email).charAt(0).toUpperCase()}</span>}
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-1.5" onClick={(ev) => ev.stopPropagation()}>
-                          <Button
-                            isIconOnly
-                            variant="tertiary"
-                            size="sm"
-                            aria-label="Account menu"
-                            className="opacity-60 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity h-7 w-7 min-w-7"
-                            onPress={(ev: unknown) => {
-                              const anyEv = ev as { target?: Element; currentTarget?: Element };
-                              const raw = (anyEv?.currentTarget ?? anyEv?.target) as HTMLElement | undefined;
-                              const target = (raw?.closest?.("button") as HTMLElement | null) ?? raw ?? null;
-                              if (!target?.getBoundingClientRect) {
-                                setEntryCtx((prev) => (prev?.id === e.id ? null : { id: e.id, x: window.innerWidth / 2, y: window.innerHeight / 2 }));
-                                return;
-                              }
-                              const r = target.getBoundingClientRect();
-                              const x = Math.min(r.right - 160, window.innerWidth - 180);
-                              const y = r.bottom + 8;
-                              setEntryCtx((prev) => (prev?.id === e.id ? null : { id: e.id, x, y }));
-                            }}
-                          >
-                            <EllipsisVerticalIcon className="w-4 h-4 text-muted-foreground" />
-                          </Button>
-                        </div>
-                      </div>
-
-                      <div>
-                        <h3 className="text-lg font-semibold text-foreground truncate leading-5">{e.title ?? displayCat?.name ?? "Account"}</h3>
-                        <span className="text-xs text-primary truncate block">{displayCat?.name ?? e.email}</span>
-                      </div>
-
-                      {e.url && (
-                        <div className="flex items-center gap-2">
-                          <svg className="w-4 h-4 text-primary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.1m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                          </svg>
-                          <a href={e.url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline truncate flex-1 min-w-0" onClick={(ev) => ev.stopPropagation()}>
-                            {e.url}
-                          </a>
-                          <svg className="w-4 h-4 text-muted-foreground shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                          </svg>
-                        </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-sm font-semibold text-foreground truncate leading-tight">{e.title ?? displayCat?.name ?? "Account"}</h3>
+                            <span className="text-xs text-muted-foreground truncate block">{e.email}</span>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0" onClick={(ev) => ev.stopPropagation()}>
+                            <Button isIconOnly size="sm" variant="ghost" aria-label={copiedId === e.id ? "Copied" : "Copy"} onPress={async () => { await navigator.clipboard.writeText(e.password); setCopiedId(e.id); window.setTimeout(() => setCopiedId((cur) => (cur === e.id ? null : cur)), 1500); }} className={`h-7 w-7 ${copiedId === e.id ? "text-success" : "text-muted-foreground"}`}>{copiedId === e.id ? <CheckIcon className="w-4 h-4" /> : <ClipboardDocumentIcon className="w-4 h-4" />}</Button>
+                            <Button isIconOnly variant="tertiary" size="sm" aria-label="Account menu" className="h-7 w-7" onPress={(ev: unknown) => {
+                              const anyEv = ev as { target?: Element; currentTarget?: Element }; const raw = (anyEv?.currentTarget ?? anyEv?.target) as HTMLElement | undefined; const target = (raw?.closest?.("button") as HTMLElement | null) ?? raw ?? null;
+                              if (!target?.getBoundingClientRect) { setEntryCtx((prev) => (prev?.id === e.id ? null : { id: e.id, x: window.innerWidth / 2, y: window.innerHeight / 2 })); return; }
+                              const r = target.getBoundingClientRect(); const x = Math.min(r.right - 160, window.innerWidth - 180); const y = r.bottom + 8; setEntryCtx((prev) => (prev?.id === e.id ? null : { id: e.id, x, y }));
+                            }}><EllipsisVerticalIcon className="w-4 h-4 text-muted-foreground" /></Button>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-2" onClick={(ev) => ev.stopPropagation()}>
+                              <Checkbox isSelected={selected.has(e.id)} onChange={() => toggleSelect(e.id)} aria-label="Select account" className="shrink-0"><Checkbox.Content><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control></Checkbox.Content></Checkbox>
+                              <div className="w-10 h-10 rounded-md flex items-center justify-center shrink-0 text-white" style={{ backgroundColor: catColor }}>
+                                {catLogo ? <img src={catLogo} alt={displayCat!.name} className="w-5 h-5 object-contain" onError={(ev) => { (ev.currentTarget as HTMLImageElement).style.display = "none"; }} /> : catIcon ? <CategoryIcon icon={catIcon} className="w-5 h-5 text-white" /> : <span className="font-bold text-sm">{(e.title ?? e.email).charAt(0).toUpperCase()}</span>}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1.5" onClick={(ev) => ev.stopPropagation()}>
+                              <Button isIconOnly variant="tertiary" size="sm" aria-label="Account menu" className="opacity-60 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity h-7 w-7 min-w-7" onPress={(ev: unknown) => {
+                                const anyEv = ev as { target?: Element; currentTarget?: Element }; const raw = (anyEv?.currentTarget ?? anyEv?.target) as HTMLElement | undefined; const target = (raw?.closest?.("button") as HTMLElement | null) ?? raw ?? null;
+                                if (!target?.getBoundingClientRect) { setEntryCtx((prev) => (prev?.id === e.id ? null : { id: e.id, x: window.innerWidth / 2, y: window.innerHeight / 2 })); return; }
+                                const r = target.getBoundingClientRect(); const x = Math.min(r.right - 160, window.innerWidth - 180); const y = r.bottom + 8; setEntryCtx((prev) => (prev?.id === e.id ? null : { id: e.id, x, y }));
+                              }}><EllipsisVerticalIcon className="w-4 h-4 text-muted-foreground" /></Button>
+                            </div>
+                          </div>
+                          <div><h3 className="text-lg font-semibold text-foreground truncate leading-5">{e.title ?? displayCat?.name ?? "Account"}</h3><span className="text-xs text-primary truncate block">{displayCat?.name ?? e.email}</span></div>
+                          {e.url && (<div className="flex items-center gap-2"><svg className="w-4 h-4 text-primary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.1m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg><a href={e.url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline truncate flex-1 min-w-0" onClick={(ev) => ev.stopPropagation()}>{e.url}</a><svg className="w-4 h-4 text-muted-foreground shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg></div>)}
+                          <div className="relative w-full" onClick={(ev) => ev.stopPropagation()}>{copiedId === e.id && <span className="absolute -top-7 right-0 z-10 text-xs font-medium bg-foreground text-background px-2 py-1 rounded-md shadow-sm pointer-events-none">Copied</span>}<InputGroup fullWidth><InputGroup.Input readOnly value={showPasswords[e.id] ? e.password : "••••••••••"} aria-label="Password" className="w-full font-mono text-sm" /><InputGroup.Suffix className="pe-0"><Button isIconOnly size="sm" variant="ghost" aria-label={showPasswords[e.id] ? "Hide password" : "Show password"} onPress={() => setShowPasswords((p) => ({ ...p, [e.id]: !p[e.id] }))} className="h-8 w-8 text-muted-foreground hover:text-foreground">{showPasswords[e.id] ? <EyeSlashIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}</Button><Button isIconOnly size="sm" variant="ghost" aria-label={copiedId === e.id ? "Copied" : "Copy password"} onPress={async () => { await navigator.clipboard.writeText(e.password); setCopiedId(e.id); window.setTimeout(() => setCopiedId((cur) => (cur === e.id ? null : cur)), 1500); }} className={`h-8 w-8 ${copiedId === e.id ? "text-success" : "text-muted-foreground hover:text-foreground"}`}>{copiedId === e.id ? <CheckIcon className="w-4 h-4" /> : <ClipboardDocumentIcon className="w-4 h-4" />}</Button></InputGroup.Suffix></InputGroup></div>
+                          <div className="flex gap-6 flex-wrap items-center justify-between"><p className="text-xs text-muted-foreground line-clamp-2 max-w-[60%] flex items-center gap-1.5"><svg className="w-3.5 h-3.5 shrink-0 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg><span className="line-clamp-2">{e.description?.trim() ? e.description : "no description"}</span></p><div className="flex items-end justify-end flex-col text-[11px] text-muted-foreground"><span className="truncate max-w-[140px]">{e.email}</span><span>updated {timeAgo(e.updatedAt)}</span></div></div>
+                        </>
                       )}
-
-                      <div className="relative w-full" onClick={(ev) => ev.stopPropagation()}>
-                        {copiedId === e.id && (
-                          <span className="absolute -top-7 right-0 z-10 text-xs font-medium bg-foreground text-background px-2 py-1 rounded-md shadow-sm pointer-events-none">Copied</span>
-                        )}
-                        <InputGroup fullWidth>
-                          <InputGroup.Input readOnly value={showPasswords[e.id] ? e.password : "••••••••••"} aria-label="Password" className="w-full font-mono text-sm" />
-                          <InputGroup.Suffix className="pe-0">
-                            <Button isIconOnly size="sm" variant="ghost" aria-label={showPasswords[e.id] ? "Hide password" : "Show password"} onPress={() => setShowPasswords((p) => ({ ...p, [e.id]: !p[e.id] }))} className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                              {showPasswords[e.id] ? <EyeSlashIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
-                            </Button>
-                            <Button
-                              isIconOnly
-                              size="sm"
-                              variant="ghost"
-                              aria-label={copiedId === e.id ? "Copied" : "Copy password"}
-                              onPress={async () => {
-                                await navigator.clipboard.writeText(e.password);
-                                setCopiedId(e.id);
-                                window.setTimeout(() => setCopiedId((cur) => (cur === e.id ? null : cur)), 1500);
-                              }}
-                              className={`h-8 w-8 ${copiedId === e.id ? "text-success" : "text-muted-foreground hover:text-foreground"}`}
-                            >
-                              {copiedId === e.id ? <CheckIcon className="w-4 h-4" /> : <ClipboardDocumentIcon className="w-4 h-4" />}
-                            </Button>
-                          </InputGroup.Suffix>
-                        </InputGroup>
-                      </div>
-
-                      <div className="flex gap-6 flex-wrap items-center justify-between">
-                        <p className="text-xs text-muted-foreground line-clamp-2 max-w-[60%] flex items-center gap-1.5">
-                          <svg className="w-3.5 h-3.5 shrink-0 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                          </svg>
-                          <span className="line-clamp-2">{e.description?.trim() ? e.description : "no description"}</span>
-                        </p>
-                        <div className="flex items-end justify-end flex-col text-[11px] text-muted-foreground">
-                          <span className="truncate max-w-[140px]">{e.email}</span>
-                          <span>updated {timeAgo(e.updatedAt)}</span>
-                        </div>
-                      </div>
                     </Card.Content>
                   </Card>
                   );
                   })}
                   <Card
-                    className="border-2 border-dashed border-border bg-muted/20 hover:border-border-strong hover:bg-muted/30 transition-colors cursor-pointer shadow-none rounded-2xl flex flex-col justify-center min-h-[180px] h-full"
+                    className={`border-2 border-dashed border-border bg-muted/20 hover:border-border-strong hover:bg-muted/30 transition-colors cursor-pointer shadow-none rounded-2xl flex flex-col justify-center h-full ${viewMode === "compact" ? "min-h-[68px]" : "min-h-[180px]"}`}
                     onClick={() => { setEditing(null); setIsAddOpen(true); }}
                   >
-                    <Card.Content className="flex flex-col items-center justify-center text-center p-6 py-8">
-                      <div className="w-12 h-12 rounded-xl bg-muted border border-border flex items-center justify-center mb-3">
-                        <svg className="w-6 h-6 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                        </svg>
+                    <Card.Content className={`flex flex-col items-center justify-center text-center ${viewMode === "compact" ? "p-4 py-4" : "p-6 py-8"}`}>
+                      <div className={`${viewMode === "compact" ? "w-8 h-8 mb-2" : "w-12 h-12 mb-3"} rounded-xl bg-muted border border-border flex items-center justify-center`}>
+                        <svg className={`${viewMode === "compact" ? "w-4 h-4" : "w-6 h-6"} text-muted-foreground`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                       </div>
-                      <p className="text-sm font-semibold text-foreground mb-1">Create a new account</p>
-                      <p className="text-sm text-muted-foreground">Add credentials to this space.</p>
+                      <p className={`${viewMode === "compact" ? "text-xs" : "text-sm"} font-semibold text-foreground mb-1`}>Create a new account</p>
+                      {viewMode !== "compact" && <p className="text-sm text-muted-foreground">Add credentials to this space.</p>}
                     </Card.Content>
                   </Card>
                 </div>

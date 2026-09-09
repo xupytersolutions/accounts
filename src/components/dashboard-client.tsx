@@ -21,7 +21,7 @@ import {
   GlobeAltIcon,
   DevicePhoneMobileIcon,
 } from "@heroicons/react/24/solid";
-import { EllipsisVerticalIcon, PencilSquareIcon, TrashIcon, ArrowTopRightOnSquareIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import { EllipsisVerticalIcon, PencilSquareIcon, TrashIcon, ArrowTopRightOnSquareIcon, ExclamationTriangleIcon, Squares2X2Icon, ListBulletIcon } from "@heroicons/react/24/outline";
 import { Card, Button, Chip, TextField, Input, TextArea, Select, ListBox, Label, Dropdown, FieldError } from "@heroui/react";
 import { spaceSchema } from "@/lib/validators";
 import { useRouter } from "next/navigation";
@@ -88,6 +88,7 @@ function timeAgo(d: string | Date) {
   return new Date(d).toLocaleDateString();
 }
 
+type ViewMode = "comfortable" | "compact";
 export function DashboardClient({ spaces, createSpace, deleteSpace, updateSpace }: { spaces: Space[]; createSpace: (fd: FormData) => Promise<void>; deleteSpace: (id: string) => Promise<void>; updateSpace: (fd: FormData) => Promise<void> }) {
   const router = useRouter();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -95,6 +96,7 @@ export function DashboardClient({ spaces, createSpace, deleteSpace, updateSpace 
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("updated");
   const [search, setSearch] = useState("");
+  const [viewMode, setViewMode] = useState<ViewMode>("comfortable");
   const [ctx, setCtx] = useState<{ id: string; x: number; y: number } | null>(null);
   const [editingSpace, setEditingSpace] = useState<Space | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Space | null>(null);
@@ -123,6 +125,13 @@ export function DashboardClient({ spaces, createSpace, deleteSpace, updateSpace 
     });
 
   const activeFilterCount = (typeFilter !== "all" ? 1 : 0) + (sortBy !== "updated" ? 1 : 0);
+  useEffect(() => {
+    const v = localStorage.getItem("vaulta:spacesView") as ViewMode | null;
+    if (v === "compact" || v === "comfortable") setViewMode(v);
+  }, []);
+  useEffect(() => {
+    localStorage.setItem("vaulta:spacesView", viewMode);
+  }, [viewMode]);
 
   useEffect(() => {
     if (!isCreateModalOpen && !editingSpace && !deleteTarget) return;
@@ -195,46 +204,68 @@ export function DashboardClient({ spaces, createSpace, deleteSpace, updateSpace 
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 py-6 sm:py-8">
-      <PageHeader
-        title="Spaces"
-        description="Organize your credentials by personal, company or clients."
-        action={
-          <Button
-            onPress={() => setIsCreateModalOpen(true)}
-            className="text-primary-foreground font-medium bg-primary hover:bg-primary-hover flex items-center gap-2"
-          >
-            <PlusIcon />
-            <span>Space</span>
-          </Button>
-        }
-      />
+      {/* Sticky header + toolbar: keeps Search/Filters/Add accessible while scrolling */}
+      <div className="sticky top-[65px] z-20 -mx-4 sm:-mx-6 px-4 sm:px-6 pt-2 pb-4 mb-2 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border/50">
+        <PageHeader
+          title="Spaces"
+          description="Organize your credentials by personal, company or clients."
+          action={
+            <Button
+              onPress={() => setIsCreateModalOpen(true)}
+              className="text-primary-foreground font-medium bg-primary hover:bg-primary-hover flex items-center gap-2"
+            >
+              <PlusIcon />
+              <span>Space</span>
+            </Button>
+          }
+        />
 
-      {/* Search + Filter pane — scalable: right of search, click to open pane */}
-      <div className="mb-6 flex gap-3 items-center">
-        <div className="flex-1 relative min-w-0">
-          <svg className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <Input
-            placeholder="Search spaces..."
-            value={search}
-            onChange={(e) => setSearch((e.target as HTMLInputElement).value)}
-            className="pl-10 h-10 border-1 w-full"
-            aria-label="Search spaces"
-          />
-        </div>
-        <div className="relative shrink-0" data-filter-trigger>
-          <Button
-            variant="tertiary"
-            onPress={() => setFilterOpen((v) => !v)}
-            className="h-10 px-4 gap-2 bg-card border border-border shadow-none rounded-xl text-foreground hover:bg-muted shrink-0"
-            aria-expanded={filterOpen}
-            aria-controls="filter-pane"
-          >
-            <FunnelIcon />
-            <span className="hidden sm:inline">Filters</span>
-            {activeFilterCount > 0 && <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold">{activeFilterCount}</span>}
-          </Button>
+        {/* Search + Filter + View toggle — sticky */}
+        <div className="flex gap-2 sm:gap-3 items-center">
+          <div className="flex-1 relative min-w-0">
+            <svg className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <Input
+              placeholder="Search spaces..."
+              value={search}
+              onChange={(e) => setSearch((e.target as HTMLInputElement).value)}
+              className="pl-10 h-10 border-1 w-full"
+              aria-label="Search spaces"
+            />
+          </div>
+          <div className="flex items-center rounded-xl border border-border bg-card p-1 shrink-0">
+            <button
+              aria-label="Comfortable view"
+              aria-pressed={viewMode === "comfortable"}
+              onClick={() => setViewMode("comfortable")}
+              className={`h-8 w-8 rounded-lg flex items-center justify-center transition-colors ${viewMode === "comfortable" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}
+              title="Comfortable"
+            >
+              <Squares2X2Icon className="w-4 h-4" />
+            </button>
+            <button
+              aria-label="Compact view"
+              aria-pressed={viewMode === "compact"}
+              onClick={() => setViewMode("compact")}
+              className={`h-8 w-8 rounded-lg flex items-center justify-center transition-colors ${viewMode === "compact" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}
+              title="Compact"
+            >
+              <ListBulletIcon className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="relative shrink-0" data-filter-trigger>
+            <Button
+              variant="tertiary"
+              onPress={() => setFilterOpen((v) => !v)}
+              className="h-10 px-4 gap-2 bg-card border border-border shadow-none rounded-xl text-foreground hover:bg-muted shrink-0"
+              aria-expanded={filterOpen}
+              aria-controls="filter-pane"
+            >
+              <FunnelIcon />
+              <span className="hidden sm:inline">Filters</span>
+              {activeFilterCount > 0 && <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold">{activeFilterCount}</span>}
+            </Button>
           {filterOpen && (
             <div
               id="filter-pane"
@@ -284,6 +315,7 @@ export function DashboardClient({ spaces, createSpace, deleteSpace, updateSpace 
           )}
         </div>
       </div>
+      </div>
 
       {/* Spaces Grid */}
       {spaces.length === 0 ? (
@@ -309,99 +341,95 @@ export function DashboardClient({ spaces, createSpace, deleteSpace, updateSpace 
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-8">
+          <div className={`grid gap-3 sm:gap-4 mb-8 ${viewMode === "compact" ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"}`}>
             {filteredSpaces.map((s) => {
               const color = getSpaceColor(s);
+              const isCompact = viewMode === "compact";
               return (
                 <Card
                   key={s.id}
-                  className="w-full shadow-none hover:scale-102 duration-500 transition-scale rounded-2xl group cursor-pointer"
+                  className={`w-full shadow-none hover:scale-[1.02] duration-300 transition-transform rounded-2xl group cursor-pointer ${isCompact ? "min-h-[108px]" : ""}`}
                   onContextMenu={(e) => { e.preventDefault(); setCtx({ id: s.id, x: e.clientX, y: e.clientY }); }}
                   onClick={() => router.push(`/spaces/${s.id}`)}
                 >
-                  <Card.Content className="p-2 flex flex-col gap-3">
-                    <div className="flex items-start justify-between">
-                      <div className="w-10 h-10 rounded-md flex items-center justify-center shrink-0 text-white" style={{ backgroundColor: color }}>
-                        {s.icon ? <SpaceIcon icon={s.icon} className="w-5 h-5 text-white" /> : <span className="font-bold text-sm">{s.name.charAt(0).toUpperCase()}</span>}
-                      </div>
-                      <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                  <Card.Content className={isCompact ? "p-3 flex flex-row items-center gap-3" : "p-2 flex flex-col gap-3"}>
+                    {isCompact ? (
+                      <>
+                        <div className="w-8 h-8 rounded-md flex items-center justify-center shrink-0 text-white" style={{ backgroundColor: color }}>
+                          {s.icon ? <SpaceIcon icon={s.icon} className="w-4 h-4 text-white" /> : <span className="font-bold text-xs">{s.name.charAt(0).toUpperCase()}</span>}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-sm font-semibold text-foreground truncate leading-tight">{s.name}</h3>
+                          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                            <span className="capitalize text-primary">{s.type}</span>
+                            <span>•</span>
+                            <span>{s._count.entries} · {timeAgo(s.updatedAt)}</span>
+                          </div>
+                        </div>
                         <Dropdown>
-                          <Button
-                            isIconOnly
-                            variant="tertiary"
-                            size="sm"
-                            aria-label="Space menu"
-                            className="opacity-60 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity h-7 w-7 min-w-7"
-                          >
+                          <Button isIconOnly variant="tertiary" size="sm" aria-label="Space menu" className="h-7 w-7 min-w-7 shrink-0" onClick={(e) => e.stopPropagation()}>
                             <EllipsisVerticalIcon className="w-4 h-4 text-muted-foreground" />
                           </Button>
                           <Dropdown.Popover className="bg-popover border border-border shadow-sm rounded-xl min-w-[180px]">
-                            <Dropdown.Menu
-                              aria-label="Space actions"
-                              className="p-1"
-                              onAction={(key) => {
-                                if (key === "open") router.push(`/spaces/${s.id}`);
-                                if (key === "edit") setEditingSpace(s);
-                                if (key === "delete") setDeleteTarget(s);
-                              }}
-                            >
-                              <Dropdown.Item id="open" textValue="Open" className="rounded-lg text-foreground data-[focused]:bg-muted">
-                                <div className="flex items-center gap-2">
-                                  <ArrowTopRightOnSquareIcon className="w-4 h-4" />
-                                  <span>Open</span>
-                                </div>
-                              </Dropdown.Item>
-                              <Dropdown.Item id="edit" textValue="Edit" className="rounded-lg text-foreground data-[focused]:bg-muted">
-                                <div className="flex items-center gap-2">
-                                  <PencilSquareIcon className="w-4 h-4" />
-                                  <span>Edit</span>
-                                </div>
-                              </Dropdown.Item>
-                              <Dropdown.Item id="delete" textValue="Delete" className="rounded-lg text-destructive data-[focused]:bg-destructive/10 data-[focused]:text-destructive">
-                                <div className="flex items-center gap-2">
-                                  <TrashIcon className="w-4 h-4" />
-                                  <span>Delete</span>
-                                </div>
-                              </Dropdown.Item>
+                            <Dropdown.Menu aria-label="Space actions" className="p-1" onAction={(key) => { if (key === "open") router.push(`/spaces/${s.id}`); if (key === "edit") setEditingSpace(s); if (key === "delete") setDeleteTarget(s); }}>
+                              <Dropdown.Item id="open" textValue="Open" className="rounded-lg text-foreground data-[focused]:bg-muted"><div className="flex items-center gap-2"><ArrowTopRightOnSquareIcon className="w-4 h-4" /><span>Open</span></div></Dropdown.Item>
+                              <Dropdown.Item id="edit" textValue="Edit" className="rounded-lg text-foreground data-[focused]:bg-muted"><div className="flex items-center gap-2"><PencilSquareIcon className="w-4 h-4" /><span>Edit</span></div></Dropdown.Item>
+                              <Dropdown.Item id="delete" textValue="Delete" className="rounded-lg text-destructive data-[focused]:bg-destructive/10 data-[focused]:text-destructive"><div className="flex items-center gap-2"><TrashIcon className="w-4 h-4" /><span>Delete</span></div></Dropdown.Item>
                             </Dropdown.Menu>
                           </Dropdown.Popover>
                         </Dropdown>
-                      </div>
-                    </div>
-
-                    {/* row 2: title solid bar */}
-                    <div>
-                      <h3 className="text-lg font-semibold text-foreground truncate leading-5">{s.name}</h3>
-                      <span className="text-xs text-primary">{s.type}</span>
-                    </div>
-
-                    <div className="flex gap-6 flex-wrap items-center justify-between">
-                      {/* visible description under placeholders to keep semantics */}
-                      <p className="text-xs text-muted-foreground line-clamp-2 max-w-[60%]">{s.description?.trim() ? s.description : "no description"}</p>
-
-                      {/* bottom bar: light container with two pills */}
-                      <div className="flex items-end justify-end flex-col text-[11px] text-muted-foreground">
-                        <span>{s._count.entries} accounts</span>
-                        <span>updated {timeAgo(s.updatedAt)}</span>
-                      </div>
-                    </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex items-start justify-between">
+                          <div className="w-10 h-10 rounded-md flex items-center justify-center shrink-0 text-white" style={{ backgroundColor: color }}>
+                            {s.icon ? <SpaceIcon icon={s.icon} className="w-5 h-5 text-white" /> : <span className="font-bold text-sm">{s.name.charAt(0).toUpperCase()}</span>}
+                          </div>
+                          <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                            <Dropdown>
+                              <Button isIconOnly variant="tertiary" size="sm" aria-label="Space menu" className="opacity-60 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity h-7 w-7 min-w-7">
+                                <EllipsisVerticalIcon className="w-4 h-4 text-muted-foreground" />
+                              </Button>
+                              <Dropdown.Popover className="bg-popover border border-border shadow-sm rounded-xl min-w-[180px]">
+                                <Dropdown.Menu aria-label="Space actions" className="p-1" onAction={(key) => { if (key === "open") router.push(`/spaces/${s.id}`); if (key === "edit") setEditingSpace(s); if (key === "delete") setDeleteTarget(s); }}>
+                                  <Dropdown.Item id="open" textValue="Open" className="rounded-lg text-foreground data-[focused]:bg-muted"><div className="flex items-center gap-2"><ArrowTopRightOnSquareIcon className="w-4 h-4" /><span>Open</span></div></Dropdown.Item>
+                                  <Dropdown.Item id="edit" textValue="Edit" className="rounded-lg text-foreground data-[focused]:bg-muted"><div className="flex items-center gap-2"><PencilSquareIcon className="w-4 h-4" /><span>Edit</span></div></Dropdown.Item>
+                                  <Dropdown.Item id="delete" textValue="Delete" className="rounded-lg text-destructive data-[focused]:bg-destructive/10 data-[focused]:text-destructive"><div className="flex items-center gap-2"><TrashIcon className="w-4 h-4" /><span>Delete</span></div></Dropdown.Item>
+                                </Dropdown.Menu>
+                              </Dropdown.Popover>
+                            </Dropdown>
+                          </div>
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-foreground truncate leading-5">{s.name}</h3>
+                          <span className="text-xs text-primary">{s.type}</span>
+                        </div>
+                        <div className="flex gap-6 flex-wrap items-center justify-between">
+                          <p className="text-xs text-muted-foreground line-clamp-2 max-w-[60%]">{s.description?.trim() ? s.description : "no description"}</p>
+                          <div className="flex items-end justify-end flex-col text-[11px] text-muted-foreground">
+                            <span>{s._count.entries} accounts</span>
+                            <span>updated {timeAgo(s.updatedAt)}</span>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </Card.Content>
                 </Card>
               );
             })}
-            {/* Create New Space Card — as grid item, same size as space cards */}
+            {/* Create New Space Card */}
             <Card
-              className="border-2 border-dashed border-border bg-muted/20 hover:border-border-strong hover:bg-muted/30 transition-colors cursor-pointer shadow-none rounded-2xl flex flex-col justify-center min-h-[158px] h-full"
+              className={`border-2 border-dashed border-border bg-muted/20 hover:border-border-strong hover:bg-muted/30 transition-colors cursor-pointer shadow-none rounded-2xl flex flex-col justify-center h-full ${viewMode === "compact" ? "min-h-[108px]" : "min-h-[158px]"}`}
               onClick={() => setIsCreateModalOpen(true)}
             >
-              <Card.Content className="flex flex-col items-center justify-center text-center p-6 py-8">
-                <div className="w-12 h-12 rounded-xl bg-neutral-200 dark:bg-neutral-800 flex items-center justify-center mb-3">
-                  <svg className="w-6 h-6 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <Card.Content className={`flex flex-col items-center justify-center text-center ${viewMode === "compact" ? "p-4 py-6" : "p-6 py-8"}`}>
+                <div className={`${viewMode === "compact" ? "w-8 h-8 mb-2" : "w-12 h-12 mb-3"} rounded-xl bg-neutral-200 dark:bg-neutral-800 flex items-center justify-center`}>
+                  <svg className={`${viewMode === "compact" ? "w-4 h-4" : "w-6 h-6"} text-neutral-500`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
                 </div>
-                <p className="text-sm font-semibold text-neutral-900 dark:text-primary-foreground mb-1">Create a new space</p>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400">Keep your credentials organized and secure.</p>
+                <p className={`${viewMode === "compact" ? "text-xs" : "text-sm"} font-semibold text-neutral-900 dark:text-primary-foreground mb-1`}>Create a new space</p>
+                {viewMode !== "compact" && <p className="text-sm text-neutral-500 dark:text-neutral-400">Keep your credentials organized and secure.</p>}
               </Card.Content>
             </Card>
           </div>
