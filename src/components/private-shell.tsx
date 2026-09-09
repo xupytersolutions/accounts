@@ -6,7 +6,34 @@ import { ThemeSwitcher } from "./theme-switcher";
 import { useState, useTransition, useEffect } from "react";
 import { updateProfile } from "@/lib/actions";
 
-export function PrivateShell({ children, user, signOutAction }: { children: React.ReactNode; user: { email?: string | null; name?: string | null; image?: string | null }; signOutAction: () => Promise<void> }) {
+function timeAgo(d?: Date | string | null) {
+  if (!d) return "";
+  const t = new Date(d).getTime();
+  const diff = Date.now() - t;
+  const s = Math.floor(diff / 1000);
+  if (s < 60) return "just now";
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const days = Math.floor(h / 24);
+  if (days < 7) return `${days}d ago`;
+  if (days < 30) return `${Math.floor(days / 7)}w ago`;
+  if (days < 365) return `${Math.floor(days / 30)}mo ago`;
+  return new Date(d).toLocaleDateString();
+}
+
+export function PrivateShell({
+  children,
+  user,
+  createdAt,
+  signOutAction,
+}: {
+  children: React.ReactNode;
+  user: { email?: string | null; name?: string | null; image?: string | null };
+  createdAt?: Date | string | null;
+  signOutAction: () => Promise<void>;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const isSpacesActive = pathname === "/dashboard" || pathname?.startsWith("/spaces");
@@ -93,7 +120,7 @@ export function PrivateShell({ children, user, signOutAction }: { children: Reac
                 <Button
                   variant="ghost"
                   aria-label="User menu"
-                  className="flex items-center gap-2 h-auto py-1 px-2 rounded-lg hover:bg-muted data-[hovered]:bg-muted"
+                  className="flex items-center gap-2 h-auto py-1 px-2 rounded-xl hover:bg-muted data-[hovered]:bg-muted max-w-[200px] sm:max-w-[240px]"
                 >
                   <div className="w-8 h-8 rounded-full bg-foreground text-background flex items-center justify-center text-sm font-medium overflow-hidden shrink-0">
                     {user.image ? (
@@ -102,19 +129,29 @@ export function PrivateShell({ children, user, signOutAction }: { children: Reac
                       (user.name ?? user.email ?? "U").charAt(0).toUpperCase()
                     )}
                   </div>
-                  <div className="hidden sm:flex flex-col items-start text-left">
-                    <span className="text-sm font-medium text-foreground leading-none">{user.name ?? "User"}</span>
-                    <span className="text-xs text-muted-foreground leading-none">{user.email}</span>
+                  <div className="hidden sm:flex flex-col items-start text-left min-w-0 max-w-[140px]">
+                    <span className="text-sm font-medium text-foreground leading-none truncate w-full block">{user.name ?? "User"}</span>
+                    <span className="text-xs text-muted-foreground leading-none truncate w-full block">{user.email}</span>
                   </div>
                   <svg className="w-4 h-4 text-muted-foreground shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </Button>
-                <Dropdown.Popover className="bg-popover border border-border shadow-sm rounded-xl min-w-[220px]">
+                <Dropdown.Popover className="bg-popover border border-border shadow-sm rounded-xl min-w-[260px] max-w-[320px]">
                 <Dropdown.Menu aria-label="User menu" className="p-1" onAction={handleAction}>
-                  <Dropdown.Item id="account-header" textValue="Profile" isDisabled className="h-14 gap-2 rounded-lg opacity-100 cursor-default data-[focused]:bg-transparent">
-                    <p className="font-semibold text-foreground">{user.name ?? "User"}</p>
-                    <p className="text-xs text-muted-foreground">{user.email}</p>
+                  <Dropdown.Item
+                    id="account-header"
+                    textValue="Profile"
+                    isDisabled
+                    className="rounded-xl opacity-100 cursor-default data-[focused]:bg-transparent py-2"
+                  >
+                    <div className="flex flex-col gap-0.5 min-w-0 max-w-[260px]">
+                      <p className="font-semibold text-foreground truncate text-sm leading-tight">{user.name ?? "User"}</p>
+                      <p className="text-xs text-muted-foreground truncate leading-tight">{user.email}</p>
+                      {createdAt && (
+                        <p className="text-[11px] text-muted-foreground/80 leading-none pt-1">Joined {timeAgo(createdAt)}</p>
+                      )}
+                    </div>
                   </Dropdown.Item>
                   <Dropdown.Item id="account" textValue="Account" className="rounded-lg text-foreground data-[focused]:bg-muted data-[focused]:text-foreground">
                     <div className="flex items-center gap-2">
