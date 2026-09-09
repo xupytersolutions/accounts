@@ -6,14 +6,12 @@ import { ThemeSwitcher } from "./theme-switcher";
 
 type SiteHeaderProps = {
   logoHref?: string;
-  nav?: React.ReactNode;
   actions?: React.ReactNode;
   showThemeSwitcher?: boolean;
 };
 
 export function SiteHeader({
   logoHref = "/",
-  nav,
   actions,
   showThemeSwitcher = true,
 }: SiteHeaderProps) {
@@ -27,7 +25,6 @@ export function SiteHeader({
             </div>
             <span className="font-semibold text-lg tracking-tight text-foreground">Vaulta</span>
           </Link>
-          {nav}
         </div>
 
         <div className="flex items-center gap-3 shrink-0">

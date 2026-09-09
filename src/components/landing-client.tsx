@@ -10,20 +10,14 @@ export function LandingClient({ isLoggedIn }: { isLoggedIn: boolean }) {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <SiteHeader
-        nav={
-          <nav className="hidden items-center gap-8 text-sm text-muted-foreground md:flex">
-            <span className="opacity-60">Password generator — soon</span>
-            <span className="opacity-60">Blogs — soon</span>
-          </nav>
-        }
         actions={
           isLoggedIn ? (
             <Link href="/dashboard">
-              <Button className="bg-primary hover:bg-primary-hover text-primary-foreground font-medium">Go to dashboard</Button>
+              <Button variant="primary">Dashboard</Button>
             </Link>
           ) : (
             <Link href="/login">
-              <Button className="bg-primary hover:bg-primary-hover text-primary-foreground font-medium">Sign in with Google</Button>
+              <Button className="bg-primary hover:bg-primary-hover text-primary-foreground font-medium">Sign in</Button>
             </Link>
           )
         }
@@ -32,25 +26,22 @@ export function LandingClient({ isLoggedIn }: { isLoggedIn: boolean }) {
       <main className="flex-1">
         <section className="relative overflow-hidden">
           <div className="mx-auto max-w-7xl px-6 pt-8 sm:pt-12 pb-20 sm:pb-32 relative">
-            <div className="grid gap-16 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+            <div className="grid gap-10 sm:gap-16 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
               <div className="flex flex-col gap-4">
-                <Chip className="w-fit flex gap-1" variant="soft">
+                <Chip className="w-fit sm:flex gap-1 hidden" variant="soft">
                   <ShieldCheckIcon className="h-4" /> Google-only login • No passwords to remember
                 </Chip>
-                <h1 className="text-5xl sm:text-6xl font-bold tracking-tight leading-tight text-foreground">
+                <h1 className="text-4xl sm:text-5xl font-bold text-display leading-tight text-foreground">
                   All your accounts,
                   <br />
                   <span className="text-primary">neatly organized</span>
                 </h1>
-                <p className="max-w-xl text-xl leading-8 text-muted-foreground">
+                <p className="max-w-xl text-base leading-7 text-muted-foreground">
                   Create spaces for personal, company and clients. Store account email, password and notes in a clean vault. Private by default, public pages for tools and guides coming soon.
                 </p>
                 <div className="flex flex-wrap gap-4">
                   <Link href="/login">
                     <Button size="lg" className="bg-primary hover:bg-primary-hover text-primary-foreground font-medium text-base px-8">Start Storing Securely <ArrowRightIcon /></Button>
-                  </Link>
-                  <Link href="/dashboard">
-                    <Button variant="outline" size="lg" className="border-border hover:bg-muted text-base px-8">Open vault</Button>
                   </Link>
                 </div>
               </div>

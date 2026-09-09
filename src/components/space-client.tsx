@@ -4,6 +4,7 @@ import { entrySchema, updateEntrySchema } from "@/lib/validators";
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { updateEntry } from "@/lib/actions";
+import { PasswordGenerator } from "./password-generator";
 import { PageHeader } from "@/components/ui/page-header";
 import { ICON_OPTIONS as CATEGORY_ICON_OPTIONS, ICON_MAP as CATEGORY_ICON_MAP, COLORS as CATEGORY_COLORS } from "@/lib/constants/icons";
 import {
@@ -21,6 +22,7 @@ import {
   ArrowDownTrayIcon,
   Squares2X2Icon,
   ListBulletIcon,
+  KeyIcon,
 } from "@heroicons/react/24/outline";
 import { FunnelIcon } from "@heroicons/react/24/solid";
 
@@ -226,6 +228,11 @@ export function SpaceClient({
   const router = useRouter();
   const [genPassword, setGenPassword] = useState<string | null>(null);
   const [genCreate, setGenCreate] = useState(false);
+  // inline generator + show password for account form
+  const [showPassword, setShowPassword] = useState(false);
+  const [showGenModal, setShowGenModal] = useState(false);
+  const [createPasswordValue, setCreatePasswordValue] = useState("");
+  const [editPasswordValue, setEditPasswordValue] = useState("");
 
   useEffect(() => {
     if (!isAddOpen && !importOpen && !transferOpen && !isEditSpaceOpen && !deleteTarget && !bulkDeleteOpen) return;
@@ -381,6 +388,20 @@ export function SpaceClient({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
+
+  // keep controlled password fields in sync with generator prefill
+  useEffect(() => {
+    if (genPassword && !editing) setCreatePasswordValue(genPassword);
+  }, [genPassword, editing]);
+  useEffect(() => {
+    if (editing) setEditPasswordValue("");
+  }, [editing]);
+  useEffect(() => {
+    if (!isAddOpen) {
+      setShowPassword(false);
+      setShowGenModal(false);
+    }
+  }, [isAddOpen]);
 
   // Derived filtered & sorted list — parity with dashboard Spaces filtering
   const filteredEntries = space.entries
@@ -1104,19 +1125,47 @@ export function SpaceClient({
                   <Input placeholder="username, email or account name" />
                   {fieldErrors.email && <FieldError>{fieldErrors.email}</FieldError>}
                 </TextField>
-                <TextField
-                  name="password"
-                  isRequired={!editing}
-                  type="password"
-                  isInvalid={!!fieldErrors.password}
-                  validationBehavior="aria"
-                  className="w-full"
-                  defaultValue={!editing && genPassword ? genPassword : ""}
-                >
-                  <Label className="text-sm font-medium text-foreground mb-2">Password {editing && <span className="text-muted-foreground font-normal">(leave blank to keep)</span>}</Label>
-                  <Input placeholder={editing ? "•••••••• (unchanged)" : "••••••••"} type="password" />
-                  {fieldErrors.password && <FieldError>{fieldErrors.password}</FieldError>}
-                </TextField>
+                <div className="w-full space-y-2">
+                  <Label className="text-sm font-medium text-foreground">Password {editing && <span className="text-muted-foreground font-normal">(leave blank to keep)</span>}</Label>
+                  <InputGroup fullWidth>
+                    <InputGroup.Input
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      value={editing ? editPasswordValue : createPasswordValue}
+                      onChange={(e) => {
+                        const v = typeof e === "string" ? e : (e.target as HTMLInputElement).value;
+                        if (editing) setEditPasswordValue(v);
+                        else setCreatePasswordValue(v);
+                      }}
+                      placeholder={editing ? "•••••••• (unchanged)" : "••••••••"}
+                      aria-invalid={!!fieldErrors.password}
+                      className="font-mono"
+                    />
+                    <InputGroup.Suffix className="gap-0 pr-0.5">
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="ghost"
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                        onPress={() => setShowPassword((v) => !v)}
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                      >
+                        {showPassword ? <EyeSlashIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
+                      </Button>
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="ghost"
+                        aria-label="Generate password"
+                        onPress={() => setShowGenModal(true)}
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                      >
+                        <KeyIcon className="w-4 h-4" />
+                      </Button>
+                    </InputGroup.Suffix>
+                  </InputGroup>
+                  {fieldErrors.password && <div className="text-sm text-danger">{fieldErrors.password}</div>}
+                </div>
                 <TextField name="url" type="url" defaultValue={editing?.url ?? ""} isInvalid={!!fieldErrors.url} validationBehavior="aria" className="w-full">
                   <Label className="text-sm font-medium text-foreground mb-2">URL (optional)</Label>
                   <Input placeholder="https://..." type="url" />
@@ -1145,6 +1194,38 @@ export function SpaceClient({
                 <Button type="submit" variant="primary" className="flex-1 h-10 font-medium">{editing ? "Save changes" : "Save account"}</Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Generator modal — nested over Add/Edit account — same clean shell as Add account */}
+      {isAddOpen && showGenModal && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-0 sm:p-4 bg-foreground/40 backdrop-blur-[2px] overflow-y-auto"
+          onClick={() => setShowGenModal(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-card rounded-t-2xl sm:rounded-2xl border-t sm:border border-border shadow-sm w-full sm:max-w-lg max-h-[90dvh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-4 sm:py-5 border-b border-border shrink-0">
+              <h3 className="text-lg font-semibold text-foreground">Generate password</h3>
+              <Button variant="ghost" isIconOnly size="sm" onPress={() => setShowGenModal(false)} aria-label="Close" className="shrink-0 -mr-1">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </Button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-3 sm:px-4 py-3 overscroll-contain">
+              <PasswordGenerator
+                onChoose={(pwd) => {
+                  if (editing) setEditPasswordValue(pwd);
+                  else setCreatePasswordValue(pwd);
+                  setGenPassword(pwd);
+                  setShowGenModal(false);
+                  setShowPassword(true);
+                }}
+              />
+            </div>
           </div>
         </div>
       )}

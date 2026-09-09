@@ -87,24 +87,6 @@ export function PrivateShell({
     <div className="flex min-h-screen flex-col bg-background">
       <SiteHeader
         logoHref="/dashboard"
-        nav={
-          <nav className="hidden md:flex items-center gap-2">
-            <Link href="/dashboard">
-              <Button
-                variant="ghost"
-                size="sm"
-                className={isSpacesActive ? "text-foreground font-medium" : "text-muted-foreground font-medium"}
-              >
-                Spaces
-              </Button>
-            </Link>
-            <Link href="/">
-              <Button variant="ghost" size="sm" className="text-muted-foreground font-medium">
-                Public site
-              </Button>
-            </Link>
-          </nav>
-        }
         actions={
           <Dropdown>
             <Button

@@ -203,7 +203,12 @@ function ModePill({ active, onClick, children }: { active: boolean; onClick: () 
   );
 }
 
-export function PasswordGenerator() {
+type PasswordGeneratorProps = {
+  onChoose?: (pwd: string) => void;
+  hideAddToSpace?: boolean;
+};
+
+export function PasswordGenerator({ onChoose, hideAddToSpace }: PasswordGeneratorProps = {}) {
   const { data: session } = useSession();
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("password");
@@ -373,7 +378,7 @@ export function PasswordGenerator() {
                     <Slider.Thumb />
                   </Slider.Track>
                 </Slider>
-                <div className="flex justify-between text-[10px] text-muted-foreground -mt-3">
+                <div className="flex justify-between text-sm text-muted-foreground -mt-3">
                   <span>6</span>
                   <span>32</span>
                 </div>
@@ -465,26 +470,34 @@ export function PasswordGenerator() {
             )}
           </div>
 
-          {/* add to space */}
-          <div className="pt-6 mt-2 border-t border-border flex flex-col gap-3">
-            <Button onPress={handleAddToSpace} className="w-full bg-primary hover:bg-primary-hover text-primary-foreground font-medium">
-              Add to my space
-            </Button>
-            {showLoginAlert && (
-              <Alert status="accent">
-                <Alert.Indicator />
-                <Alert.Content>
-                  <Alert.Title>Login to save your password</Alert.Title>
-                  <Alert.Description>
-                    You need to be signed in to save generated passwords to a space.{" "}
-                    <Link href="/login" className="underline font-medium">
-                      Sign in with Google
-                    </Link>
-                  </Alert.Description>
-                </Alert.Content>
-              </Alert>
-            )}
-          </div>
+          {/* add to space / choose footer */}
+          {onChoose ? (
+            <div className="pt-4 flex flex-col gap-3">
+              <Button onPress={() => onChoose(password)} className="w-full bg-primary hover:bg-primary-hover text-primary-foreground font-medium">
+                Choose this password
+              </Button>
+            </div>
+          ) : !hideAddToSpace ? (
+            <div className="pt-6 mt-2 border-t border-border flex flex-col gap-3">
+              <Button onPress={handleAddToSpace} className="w-full bg-primary hover:bg-primary-hover text-primary-foreground font-medium">
+                Add to my space
+              </Button>
+              {showLoginAlert && (
+                <Alert status="accent">
+                  <Alert.Indicator />
+                  <Alert.Content>
+                    <Alert.Title>Login to save your password</Alert.Title>
+                    <Alert.Description>
+                      You need to be signed in to save generated passwords to a space.{" "}
+                      <Link href="/login" className="underline font-medium">
+                        Sign in with Google
+                      </Link>
+                    </Alert.Description>
+                  </Alert.Content>
+                </Alert>
+              )}
+            </div>
+          ) : null}
         </Card.Content>
       </Card>
 
