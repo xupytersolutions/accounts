@@ -1,6 +1,6 @@
 import { auth, signIn } from "@/auth";
 import { redirect } from "next/navigation";
-import { LoginClient } from "@/components/login-client";
+import { LoginCard } from "@/components/login/login-card";
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ callbackUrl?: string }> }) {
   const session = await auth();
@@ -12,5 +12,9 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
     await signIn("google", { redirectTo: callbackUrl ?? "/dashboard" });
   }
 
-  return <LoginClient action={action} />;
+  return (
+    <div className="flex flex-1 items-center justify-center p-6">
+      <LoginCard action={action} />
+    </div>
+  );
 }

@@ -16,7 +16,19 @@ export default async function SpacePage({ params }: { params: Promise<{ id: stri
   const allCategories = await prisma.category.findMany({ where: { ownerId: user!.id }, orderBy: { name: "asc" } });
   const entriesWithCategory = await prisma.vaultEntry.findMany({ where: { spaceId: id }, include: { categoryRef: true } });
   // merge categoryRef into space.entries for client
-  const spaceWithCats = { ...space, entries: entriesWithCategory.sort((a,b)=> new Date(b.createdAt).getTime()- new Date(a.createdAt).getTime()) };
+  const spaceWithCats = { ...space, entries: entriesWithCategory.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) };
 
-  return <SpaceClient space={spaceWithCats as never} allSpaces={allSpaces as never} allCategories={allCategories as never} createEntry={createEntry} deleteEntry={deleteEntry} transferEntry={transferEntry} bulkCreateEntries={bulkCreateEntries} bulkDeleteEntries={bulkDeleteEntries} bulkTransferEntries={bulkTransferEntries} />;
+  return (
+    <SpaceClient
+      space={spaceWithCats as never}
+      allSpaces={allSpaces as never}
+      allCategories={allCategories as never}
+      createEntry={createEntry}
+      deleteEntry={deleteEntry}
+      transferEntry={transferEntry}
+      bulkCreateEntries={bulkCreateEntries}
+      bulkDeleteEntries={bulkDeleteEntries}
+      bulkTransferEntries={bulkTransferEntries}
+    />
+  );
 }

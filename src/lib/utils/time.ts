@@ -15,6 +15,8 @@ export function timeAgo(date?: string | Date | null): string {
 
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days}d ago`;
+  if (days < 30) return `${Math.floor(days / 7)}w ago`;
+  if (days < 365) return `${Math.floor(days / 30)}mo ago`;
 
   return new Date(date).toLocaleDateString();
 }

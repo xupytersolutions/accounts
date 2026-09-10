@@ -1,27 +1,13 @@
 "use client";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { Button, Dropdown, Input, TextField, Label } from "@heroui/react";
-import { SiteHeader } from "./site-header";
+
+import { useRouter } from "next/navigation";
+import { Button, Dropdown } from "@heroui/react";
+import { Header } from "./header";
 import { useState, useTransition, useEffect } from "react";
 import { updateProfile } from "@/lib/actions";
-
-function timeAgo(d?: Date | string | null) {
-  if (!d) return "";
-  const t = new Date(d).getTime();
-  const diff = Date.now() - t;
-  const s = Math.floor(diff / 1000);
-  if (s < 60) return "just now";
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  const days = Math.floor(h / 24);
-  if (days < 7) return `${days}d ago`;
-  if (days < 30) return `${Math.floor(days / 7)}w ago`;
-  if (days < 365) return `${Math.floor(days / 30)}mo ago`;
-  return new Date(d).toLocaleDateString();
-}
+import { ChevronDownIcon, UserIcon, ArrowRightStartOnRectangleIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { timeAgo } from "@/lib/utils/time";
+import { AccountForm } from "./account/account-form";
 
 export function PrivateShell({
   children,
@@ -34,9 +20,7 @@ export function PrivateShell({
   createdAt?: Date | string | null;
   signOutAction: () => Promise<void>;
 }) {
-  const pathname = usePathname();
   const router = useRouter();
-  const isSpacesActive = pathname === "/dashboard" || pathname?.startsWith("/spaces");
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [accountName, setAccountName] = useState(user.name ?? "");
@@ -85,7 +69,7 @@ export function PrivateShell({
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <SiteHeader
+      <Header
         logoHref="/dashboard"
         actions={
           <Dropdown>
@@ -105,9 +89,7 @@ export function PrivateShell({
                 <span className="text-sm font-medium text-foreground leading-none truncate w-full block">{user.name ?? "User"}</span>
                 <span className="text-xs text-muted-foreground leading-none truncate w-full block">{user.email}</span>
               </div>
-              <svg className="w-4 h-4 text-muted-foreground shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
+              <ChevronDownIcon className="w-4 h-4 text-muted-foreground shrink-0" />
             </Button>
             <Dropdown.Popover className="bg-popover border border-border shadow-sm rounded-xl min-w-[260px] max-w-[320px]">
               <Dropdown.Menu aria-label="User menu" className="p-1" onAction={handleAction}>
@@ -131,9 +113,7 @@ export function PrivateShell({
                   className="rounded-lg text-foreground data-[focused]:bg-muted data-[focused]:text-foreground"
                 >
                   <div className="flex items-center gap-2">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
+                    <UserIcon className="w-4 h-4" />
                     <span>Account</span>
                   </div>
                 </Dropdown.Item>
@@ -143,9 +123,7 @@ export function PrivateShell({
                   className="rounded-lg text-destructive data-[focused]:bg-destructive/10 data-[focused]:text-destructive"
                 >
                   <div className="flex items-center gap-2">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
+                    <ArrowRightStartOnRectangleIcon className="w-4 h-4" />
                     <span>Sign out</span>
                   </div>
                 </Dropdown.Item>
@@ -172,40 +150,11 @@ export function PrivateShell({
                 <p className="text-sm text-muted-foreground truncate">{user.email}</p>
               </div>
               <Button variant="ghost" isIconOnly size="sm" onPress={() => setIsAccountOpen(false)} aria-label="Close" className="shrink-0 -mr-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                <XMarkIcon className="w-5 h-5" />
               </Button>
             </div>
 
-            <form onSubmit={handleUpdateProfile} className="flex flex-col flex-1 min-h-0">
-              <div className="flex-1 overflow-y-auto p-6 space-y-4 overscroll-contain">
-                {error && <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">{error}</p>}
-
-                <TextField name="name" className="w-full" value={accountName} onChange={setAccountName}>
-                  <Label className="text-sm font-medium text-foreground mb-2">Name</Label>
-                  <Input placeholder="Your name" />
-                </TextField>
-
-                <TextField name="image" className="w-full" value={accountImage} onChange={setAccountImage}>
-                  <Label className="text-sm font-medium text-foreground mb-2">Avatar image URL</Label>
-                  <Input placeholder="https://..." />
-                </TextField>
-
-                <TextField isDisabled className="w-full">
-                  <Label className="text-sm font-medium text-foreground mb-2">Email</Label>
-                  <Input value={user.email ?? ""} aria-label="Email" />
-                </TextField>
-                <p className="text-xs text-muted-foreground -mt-2">Email is managed by your provider.</p>
-              </div>
-
-              <div className="flex gap-3 p-6 pt-4 border-t border-border shrink-0 bg-card">
-                <Button variant="tertiary" type="button" onPress={() => setIsAccountOpen(false)} className="flex-1 h-10" isDisabled={isPending}>
-                  Cancel
-                </Button>
-                <Button variant="primary" type="submit" className="flex-1 h-10 font-medium" isDisabled={isPending}>
-                  {isPending ? "Saving..." : "Save changes"}
-                </Button>
-              </div>
-            </form>
+            <AccountForm valueName={accountName} valueImage={accountImage} onNameChange={setAccountName} onImageChange={setAccountImage} email={user.email ?? ""} error={error} isPending={isPending} onSubmit={handleUpdateProfile} showCancel onCancel={() => setIsAccountOpen(false)} />
           </div>
         </div>
       )}

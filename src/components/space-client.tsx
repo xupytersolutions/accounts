@@ -1,31 +1,28 @@
 "use client";
-import { Card, Button, TextField, Input, InputGroup, TextArea, Label, Select, ListBox, Dropdown, Separator, Checkbox, FieldError } from "@heroui/react";
-import { entrySchema, updateEntrySchema } from "@/lib/validators";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { updateEntry } from "@/lib/actions";
-import { PasswordGenerator } from "./password-generator";
-import { PageHeader } from "@/components/ui/page-header";
-import { ICON_OPTIONS as CATEGORY_ICON_OPTIONS, ICON_MAP as CATEGORY_ICON_MAP, COLORS as CATEGORY_COLORS } from "@/lib/constants/icons";
-import {
-  LockClosedIcon,
-  EllipsisVerticalIcon,
-  PencilSquareIcon,
-  TrashIcon,
-  ArrowsRightLeftIcon,
-  ClipboardDocumentIcon,
-  CheckIcon,
-  EyeIcon,
-  EyeSlashIcon,
-  ExclamationTriangleIcon,
-  ArrowUpTrayIcon,
-  ArrowDownTrayIcon,
-  Squares2X2Icon,
-  ListBulletIcon,
-  KeyIcon,
-} from "@heroicons/react/24/outline";
-import { FunnelIcon } from "@heroicons/react/24/solid";
+import { Card, Button, Checkbox, Dropdown, Separator } from "@heroui/react";
+import { LockClosedIcon, EllipsisVerticalIcon, PencilSquareIcon, TrashIcon, ArrowsRightLeftIcon, ArrowUpTrayIcon, ArrowDownTrayIcon, ClipboardDocumentIcon, PlusIcon } from "@heroicons/react/24/outline";
 
+import { updateEntry } from "@/lib/actions";
+import { StickyHeader } from "@/components/ui/sticky-header";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { EntryCard } from "@/components/entries/entry-card";
+import { EntryToolbar } from "@/components/entries/entry-toolbar";
+import { EntryFormDialog } from "@/components/entries/entry-form-dialog";
+import { TransferDialog } from "@/components/entries/transfer-dialog";
+import { ImportDialog } from "@/components/entries/import-dialog";
+import { useSelection } from "@/lib/hooks/use-selection";
+import { useOutsideClick } from "@/lib/hooks/use-outside-click";
+import { useViewMode } from "@/lib/hooks/use-view-mode";
+import { useEntryFilters } from "@/lib/hooks/use-entry-filters";
+import { entrySchema } from "@/lib/validators";
+import { parseImportText } from "@/lib/utils/csv";
+import { exportEntriesToFile } from "@/lib/utils/export";
+import { timeAgo } from "@/lib/utils/time";
+import type { SpaceClientProps, VaultEntry } from "@/lib/types";
+
+<<<<<<< Updated upstream
 type Category = { id: string; name: string; icon: string | null; color: string | null; logoUrl: string | null };
 type Entry = { id: string; title: string | null; email: string; password: string; description: string | null; url: string | null; category: string | null; icon: string | null; color: string | null; logoUrl: string | null; categoryId: string | null; categoryRef?: Category | null; updatedAt?: string | Date };
 type Space = { id: string; name: string; type: string; description: string | null; entries: Entry[]; updatedAt?: string | Date };
@@ -181,98 +178,41 @@ export function SpaceClient({
   bulkDeleteEntries: (entryIds: string[], spaceId: string) => Promise<void>;
   bulkTransferEntries: (entryIds: string[], targetSpaceId: string) => Promise<void>;
 }) {
+=======
+export function SpaceClient({ space, allSpaces, allCategories, createEntry, deleteEntry, transferEntry, bulkCreateEntries, bulkDeleteEntries, bulkTransferEntries }: SpaceClientProps) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const { selected, toggle, clear, remove } = useSelection(space.entries.length, space.entries.map((e) => e.id));
+  const [search, setSearch] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("updated");
+  const [viewMode, setViewMode] = useViewMode("one-account:accountsView");
+>>>>>>> Stashed changes
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const [editing, setEditing] = useState<Entry | null>(null);
-  const [isEditSpaceOpen, setIsEditSpaceOpen] = useState(false);
-  // category state for create
-  const [createCatKey, setCreateCatKey] = useState<string>("none");
-  const [createCustomName, setCreateCustomName] = useState("");
-  const [createCatIcon, setCreateCatIcon] = useState("");
-  const [createCatColor, setCreateCatColor] = useState(CATEGORY_COLORS[0]);
-  const [createCatLogoUrl, setCreateCatLogoUrl] = useState<string | null>(null);
-  // category state for edit
-  const [editCatKey, setEditCatKey] = useState<string>("none");
-  const [editCustomName, setEditCustomName] = useState("");
-  const [editCatIcon, setEditCatIcon] = useState("");
-  const [editCatColor, setEditCatColor] = useState(CATEGORY_COLORS[0]);
-  const [editCatLogoUrl, setEditCatLogoUrl] = useState<string | null>(null);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [transferOpen, setTransferOpen] = useState<{ ids: string[] } | null>(null);
-  const [transferTarget, setTransferTarget] = useState<string>("");
-  const [importOpen, setImportOpen] = useState(false);
-  const [importRows, setImportRows] = useState<ImportRow[]>([]);
-  const [importFileName, setImportFileName] = useState("");
-  const [importError, setImportError] = useState("");
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  // Search / filter / sort — parity with dashboard Spaces
-  const [search, setSearch] = useState("");
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<string>("updated");
-  type ViewMode = "comfortable" | "compact";
-  const [viewMode, setViewMode] = useState<ViewMode>("comfortable");
-
-  // entry context menu + confirm modals
+  const [editing, setEditing] = useState<VaultEntry | null>(null);
   const [entryCtx, setEntryCtx] = useState<{ id: string; x: number; y: number } | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Entry | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<VaultEntry | null>(null);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [transferOpen, setTransferOpen] = useState<{ ids: string[] } | null>(null);
+  const [transferTarget, setTransferTarget] = useState("");
   const [isTransferring, setIsTransferring] = useState(false);
-  const [entryFormError, setEntryFormError] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  // generator → add to space flow: prefill from ?create=1&password= or sessionStorage
-  const searchParams = useSearchParams();
-  const router = useRouter();
+  const [importOpen, setImportOpen] = useState(false);
+  const [importRows, setImportRows] = useState<import("@/lib/types").ImportRow[]>([]);
+  const [importFileName, setImportFileName] = useState("");
+  const [importError, setImportError] = useState("");
   const [genPassword, setGenPassword] = useState<string | null>(null);
   const [genCreate, setGenCreate] = useState(false);
-  // inline generator + show password for account form
-  const [showPassword, setShowPassword] = useState(false);
-  const [showGenModal, setShowGenModal] = useState(false);
-  const [createPasswordValue, setCreatePasswordValue] = useState("");
-  const [editPasswordValue, setEditPasswordValue] = useState("");
 
-  useEffect(() => {
-    if (!isAddOpen && !importOpen && !transferOpen && !isEditSpaceOpen && !deleteTarget && !bulkDeleteOpen) return;
-    document.body.style.overflow = "hidden";
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setIsAddOpen(false);
-        setEditing(null);
-        setGenPassword(null);
-        setGenCreate(false);
-        setIsEditSpaceOpen(false);
-        setImportOpen(false);
-        setTransferOpen(null);
-        setDeleteTarget(null);
-        setBulkDeleteOpen(false);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => { document.body.style.overflow = ""; window.removeEventListener("keydown", onKey); };
-  }, [isAddOpen, importOpen, transferOpen, isEditSpaceOpen, deleteTarget, bulkDeleteOpen]);
+  const { filteredEntries, activeFilterCount } = useEntryFilters(space.entries, search, categoryFilter, sortBy);
 
-  // close entry context menu on outside click / scroll / esc
-  useEffect(() => {
-    if (!entryCtx) return;
-    const onDown = (e: MouseEvent) => {
-      const t = e.target as Element;
-      if (!t.closest("[data-entry-ctx]")) setEntryCtx(null);
-    };
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setEntryCtx(null); };
-    const onScroll = () => setEntryCtx(null);
-    document.addEventListener("mousedown", onDown);
-    window.addEventListener("keydown", onKey);
-    window.addEventListener("scroll", onScroll, true);
-    return () => {
-      document.removeEventListener("mousedown", onDown);
-      window.removeEventListener("keydown", onKey);
-      window.removeEventListener("scroll", onScroll, true);
-    };
-  }, [entryCtx]);
+  useOutsideClick(filterOpen, () => setFilterOpen(false), "[data-filter-pane],[data-filter-trigger]");
+  useOutsideClick(!!entryCtx, () => setEntryCtx(null), "[data-context-menu],[data-ctx-menu]");
 
+<<<<<<< Updated upstream
   // reset create category when opening create modal (no editing)
   useEffect(() => {
     if (isAddOpen && !editing) {
@@ -370,10 +310,18 @@ export function SpaceClient({
         if (stored) pwd = stored;
       } catch { }
     }
+=======
+  useEffect(() => {
+    const create = searchParams.get("create") === "1" || searchParams.get("gen") === "1";
+    let pwd = searchParams.get("password");
+    if (!pwd) { try { const s = sessionStorage.getItem("one-account:genPassword"); if (s) pwd = s; } catch { } }
+>>>>>>> Stashed changes
     if (create) {
-      if (pwd !== null && pwd !== "") setGenPassword(pwd);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (pwd) setGenPassword(pwd);
       setGenCreate(true);
       if (!isAddOpen && !editing) setIsAddOpen(true);
+<<<<<<< Updated upstream
       // clean URL (keep pathname, drop gen params)
       const params = new URLSearchParams(searchParams.toString());
       params.delete("create");
@@ -385,266 +333,53 @@ export function SpaceClient({
         // keep for this modal session, clear after read to avoid reuse
         if (pwd) sessionStorage.removeItem("one-account:genPassword");
       } catch { }
+=======
+      const params = new URLSearchParams(searchParams.toString()); params.delete("create"); params.delete("gen"); params.delete("password");
+      const qs = params.toString(); router.replace(qs ? `${window.location.pathname}?${qs}` : window.location.pathname);
+      try { if (pwd) sessionStorage.removeItem("one-account:genPassword"); } catch { }
+>>>>>>> Stashed changes
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+  }, [searchParams, router, isAddOpen, editing]);
 
-  // keep controlled password fields in sync with generator prefill
-  useEffect(() => {
-    if (genPassword && !editing) setCreatePasswordValue(genPassword);
-  }, [genPassword, editing]);
-  useEffect(() => {
-    if (editing) setEditPasswordValue("");
-  }, [editing]);
-  useEffect(() => {
-    if (!isAddOpen) {
-      setShowPassword(false);
-      setShowGenModal(false);
-    }
-  }, [isAddOpen]);
-
-  // Derived filtered & sorted list — parity with dashboard Spaces filtering
-  const filteredEntries = space.entries
-    .filter((e) => {
-      if (categoryFilter !== "all") {
-        if (categoryFilter === "none") {
-          const hasCat = (e as unknown as { categoryRef?: Category | null }).categoryRef || e.category;
-          return !hasCat;
-        }
-        const catId = (e as unknown as { categoryRef?: Category | null }).categoryRef?.id ?? "";
-        const catName = (e as unknown as { categoryRef?: Category | null }).categoryRef?.name?.toLowerCase() ?? e.category?.toLowerCase() ?? "";
-        if (catId === categoryFilter) return true;
-        if (catName === categoryFilter.toLowerCase()) return true;
-        return false;
-      }
-      return true;
-    })
-    .filter((e) => {
-      if (!search.trim()) return true;
-      const q = search.toLowerCase();
-      const catName = (e as unknown as { categoryRef?: Category | null }).categoryRef?.name ?? e.category ?? "";
-      return (
-        (e.title ?? "").toLowerCase().includes(q) ||
-        e.email.toLowerCase().includes(q) ||
-        (e.description ?? "").toLowerCase().includes(q) ||
-        (e.url ?? "").toLowerCase().includes(q) ||
-        catName.toLowerCase().includes(q)
-      );
-    })
-    .sort((a, b) => {
-      if (sortBy === "title") return (a.title ?? a.email).localeCompare(b.title ?? b.email);
-      if (sortBy === "email") return a.email.localeCompare(b.email);
-      if (sortBy === "category") {
-        const ca = (a as unknown as { categoryRef?: Category | null }).categoryRef?.name ?? a.category ?? "";
-        const cb = (b as unknown as { categoryRef?: Category | null }).categoryRef?.name ?? b.category ?? "";
-        return ca.localeCompare(cb);
-      }
-      const da = a.updatedAt ? new Date(a.updatedAt as unknown as string).getTime() : 0;
-      const db = b.updatedAt ? new Date(b.updatedAt as unknown as string).getTime() : 0;
-      return db - da;
-    });
-
-  const activeFilterCount = (categoryFilter !== "all" ? 1 : 0) + (sortBy !== "updated" ? 1 : 0);
-
-  const toggleSelect = (id: string) => {
-    setSelected((prev) => {
-      const n = new Set(prev);
-      if (n.has(id)) n.delete(id); else n.add(id);
-      return n;
-    });
-  };
-  const selectAll = () => {
-    const ids = filteredEntries.map((e) => e.id);
-    const allSelected = ids.length > 0 && ids.every((id) => selected.has(id));
-    if (allSelected) {
-      setSelected((prev) => {
-        const n = new Set(prev);
-        ids.forEach((id) => n.delete(id));
-        return n;
-      });
-    } else {
-      setSelected((prev) => {
-        const n = new Set(prev);
-        ids.forEach((id) => n.add(id));
-        return n;
-      });
-    }
-  };
-
-  const handleExport = () => {
-    const header = ["title", "email", "password", "url", "description", "category"].map(csvEscape).join(",");
-    const lines = space.entries.map((e) => {
-      const cat = (e as unknown as { categoryRef?: Category | null }).categoryRef?.name ?? e.category ?? "";
-      return [e.title ?? "", e.email, e.password, e.url ?? "", e.description ?? "", cat].map(csvEscape).join(",");
-    });
-    const content = [header, ...lines].join("\n");
-    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${space.name.replace(/\s+/g, "_")}_export.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
+  const toggleShow = (id: string) => setShowPasswords((p) => ({ ...p, [id]: !p[id] }));
+  const handleCopy = async (id: string, pwd: string) => { await navigator.clipboard.writeText(pwd); setCopiedId(id); window.setTimeout(() => setCopiedId((cur) => (cur === id ? null : cur)), 1500); };
+  const handleExport = () => exportEntriesToFile(space.entries, space.name);
   const handleFile = async (f: File | null) => {
-    if (!f) return;
-    setImportFileName(f.name);
-    setImportError("");
-    const text = await f.text();
-    const rows = parseImportTxt(text);
+    if (!f) return; setImportFileName(f.name); setImportError(""); const text = await f.text(); const rows = parseImportText(text);
     if (rows.length === 0) setImportError("No valid rows found. Expected txt with CSV/JSON: title,email,password,url,description or JSON array.");
     setImportRows(rows);
   };
-
-  const updateImportRow = (uid: string, patch: Partial<ImportRow>) => {
-    setImportRows((prev) => prev.map((r) => (r.uid === uid ? { ...r, ...patch } : r)));
-  };
-
   const confirmImport = async () => {
     const valid = importRows.filter((r) => r.email && r.password);
     if (valid.length === 0) { setImportError("Each row needs login and password"); return; }
-    // client-side row validation (zod) before server
-    for (const r of valid) {
-      const parsed = entrySchema.safeParse({ title: r.title || null, email: r.email, password: r.password, url: r.url || null, description: r.description || null, category: r.category || null });
-      if (!parsed.success) { setImportError(`Row "${r.title || r.email}": ${parsed.error?.issues?.[0]?.message || "Validation failed"}`); return; }
-    }
-    try {
-      await bulkCreateEntries(space.id, valid.map((r) => ({ title: r.title || null, email: r.email, password: r.password, url: r.url || null, description: r.description || null, category: r.category || null })));
-      setImportOpen(false);
-      setImportRows([]);
-      setImportFileName("");
-      setImportError("");
-    } catch (e) {
-      setImportError(e instanceof Error ? e.message : "Import failed");
-    }
+    for (const r of valid) { const p = entrySchema.safeParse({ title: r.title || null, email: r.email, password: r.password, url: r.url || null, description: r.description || null, category: r.category || null }); if (!p.success) { setImportError(`Row "${r.title || r.email}": ${p.error?.issues?.[0]?.message || "Validation failed"}`); return; } }
+    try { await bulkCreateEntries(space.id, valid.map((r) => ({ title: r.title || null, email: r.email, password: r.password, url: r.url || null, description: r.description || null, category: r.category || null }))); setImportOpen(false); setImportRows([]); setImportFileName(""); setImportError(""); } catch (e) { setImportError(e instanceof Error ? e.message : "Import failed"); }
   };
-
   const handleTransfer = async () => {
-    if (!transferOpen || !transferTarget) return;
-    setIsTransferring(true);
-    try {
-      if (transferOpen.ids.length === 1) {
-        await transferEntry(transferOpen.ids[0], transferTarget);
-      } else {
-        await bulkTransferEntries(transferOpen.ids, transferTarget);
-      }
-      setTransferOpen(null);
-      setTransferTarget("");
-      setSelected(new Set());
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsTransferring(false);
-    }
+    if (!transferOpen || !transferTarget) return; setIsTransferring(true);
+    try { if (transferOpen.ids.length === 1) await transferEntry(transferOpen.ids[0], transferTarget); else await bulkTransferEntries(transferOpen.ids, transferTarget); setTransferOpen(null); setTransferTarget(""); clear(); } finally { setIsTransferring(false); }
   };
-
-  const confirmSingleDelete = async () => {
-    if (!deleteTarget) return;
-    setIsDeleting(true);
-    try {
-      await deleteEntry(deleteTarget.id, space.id);
-      setDeleteTarget(null);
-      setSelected((prev) => { const n = new Set(prev); n.delete(deleteTarget.id); return n; });
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  const confirmBulkDelete = async () => {
-    if (selected.size === 0) return;
-    setIsDeleting(true);
-    try {
-      await bulkDeleteEntries(Array.from(selected), space.id);
-      setBulkDeleteOpen(false);
-      setSelected(new Set());
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
+  const confirmSingleDelete = async () => { if (!deleteTarget) return; setIsDeleting(true); try { await deleteEntry(deleteTarget.id, space.id); setDeleteTarget(null); remove(deleteTarget.id); } finally { setIsDeleting(false); } };
+  const confirmBulkDelete = async () => { if (selected.size === 0) return; setIsDeleting(true); try { await bulkDeleteEntries(Array.from(selected), space.id); setBulkDeleteOpen(false); clear(); } finally { setIsDeleting(false); } };
   const entryCtxEntry = entryCtx ? space.entries.find((e) => e.id === entryCtx.id) ?? null : null;
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 py-6 sm:py-8">
-      {/* Sticky header + toolbar */}
-      <div className="sticky top-[65px] z-20 -mx-4 sm:-mx-6 px-4 sm:px-6 pt-2 pb-4 mb-2 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border/50">
-        <PageHeader
-          breadcrumbs={[
-            { label: "Spaces", href: "/dashboard" },
-            { label: space.name },
-          ]}
-          title={space.name}
-          description={space.description?.trim() ? space.description : `Manage credentials in this ${space.type} space.`}
-          badge={{ label: space.type }}
-          action={
-            <div className="flex items-center gap-2">
-              <Button onPress={() => { setEditing(null); setIsAddOpen(true); }} className="bg-primary hover:bg-primary-hover text-primary-foreground font-medium h-9">+ Account</Button>
-              <Dropdown>
-                <Button isIconOnly variant="tertiary" size="sm" aria-label="Account actions" className="h-9 w-9 border border-border bg-card">
-                  <EllipsisVerticalIcon className="w-5 h-5" />
-                </Button>
-                <Dropdown.Popover className="bg-popover border border-border shadow-sm rounded-xl min-w-[200px]">
-                  <Dropdown.Menu
-                    aria-label="Account actions"
-                    className="p-1"
-                    onAction={(key) => {
-                      if (key === "export") handleExport();
-                      if (key === "import") setImportOpen(true);
-                      if (key === "bulk-transfer" && selected.size > 0) setTransferOpen({ ids: Array.from(selected) });
-                      if (key === "bulk-delete" && selected.size > 0) setBulkDeleteOpen(true);
-                    }}
-                  >
-                    {selected.size > 0 && (
-                      <>
-                        <Dropdown.Item id="bulk-transfer" textValue="Transfer selected" className="rounded-lg text-foreground data-[focused]:bg-muted">
-                          <div className="flex items-center gap-2">
-                            <ArrowsRightLeftIcon className="w-4 h-4" />
-                            <span>Transfer ({selected.size})</span>
-                          </div>
-                        </Dropdown.Item>
-                        <Dropdown.Item id="bulk-delete" textValue="Delete selected" className="rounded-lg text-destructive data-[focused]:bg-destructive/10 data-[focused]:text-destructive">
-                          <div className="flex items-center gap-2">
-                            <TrashIcon className="w-4 h-4" />
-                            <span>Delete ({selected.size})</span>
-                          </div>
-                        </Dropdown.Item>
-                        <Separator className="my-1 bg-border" />
-                      </>
-                    )}
-                    <Dropdown.Item id="export" textValue="Export txt" className="rounded-lg text-foreground data-[focused]:bg-muted flex items-center gap-2">
-                      <div className="flex items-center gap-2">
-                        <ArrowDownTrayIcon className="w-4 h-4" />
-                        <span>Export txt</span>
-                      </div>
-                    </Dropdown.Item>
-                    <Dropdown.Item id="import" textValue="Import txt" className="rounded-lg text-foreground data-[focused]:bg-muted flex items-center gap-2">
-                      <div className="flex items-center gap-2">
-                        <ArrowUpTrayIcon className="w-4 h-4" />
-                        <span>Import txt</span>
-                      </div>
-                    </Dropdown.Item>
-                  </Dropdown.Menu>
-                </Dropdown.Popover>
-              </Dropdown>
-            </div>
-          }
-        />
-
-        {/* Search + Filter + View toggle — sticky */}
-        <div className="flex gap-2 sm:gap-3 items-center">
-          <div className="flex-1 relative min-w-0">
-            <svg className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <Input
-              placeholder="Search accounts..."
-              value={search}
-              onChange={(e) => setSearch((e.target as HTMLInputElement).value)}
-              className="pl-10 w-full"
-              aria-label="Search accounts"
-            />
+      <StickyHeader
+        breadcrumbs={[{ label: "Spaces", href: "/dashboard" }, { label: space.name }]}
+        title={space.name}
+        description={space.description?.trim() ? space.description : `Manage credentials in this ${space.type} space.`}
+        badge={{ label: space.type }}
+        action={
+          <div className="flex items-center gap-2">
+            <Button onPress={() => { setEditing(null); setIsAddOpen(true); }} className="bg-primary hover:bg-primary-hover text-primary-foreground font-medium h-9">+ Account</Button>
+            <Dropdown><Button isIconOnly variant="tertiary" size="sm" aria-label="Account actions" className="h-9 w-9 border border-border bg-card"><EllipsisVerticalIcon className="w-5 h-5" /></Button>
+              <Dropdown.Popover className="bg-popover border border-border shadow-sm rounded-xl min-w-[200px]"><Dropdown.Menu aria-label="Account actions" className="p-1" onAction={(k) => { if (k === "export") handleExport(); if (k === "import") setImportOpen(true); if (k === "bulk-transfer" && selected.size > 0) setTransferOpen({ ids: Array.from(selected) }); if (k === "bulk-delete" && selected.size > 0) setBulkDeleteOpen(true); }}>
+                {selected.size > 0 && (<><Dropdown.Item id="bulk-transfer" textValue="Transfer selected" className="rounded-lg text-foreground data-[focused]:bg-muted"><div className="flex items-center gap-2"><ArrowsRightLeftIcon className="w-4 h-4" /><span>Transfer ({selected.size})</span></div></Dropdown.Item><Dropdown.Item id="bulk-delete" textValue="Delete selected" className="rounded-lg text-destructive data-[focused]:bg-destructive/10 data-[focused]:text-destructive"><div className="flex items-center gap-2"><TrashIcon className="w-4 h-4" /><span>Delete ({selected.size})</span></div></Dropdown.Item><Separator className="my-1 bg-border" /></>)}
+                <Dropdown.Item id="export" textValue="Export txt" className="rounded-lg text-foreground data-[focused]:bg-muted"><div className="flex items-center gap-2"><ArrowDownTrayIcon className="w-4 h-4" /><span>Export txt</span></div></Dropdown.Item><Dropdown.Item id="import" textValue="Import txt" className="rounded-lg text-foreground data-[focused]:bg-muted"><div className="flex items-center gap-2"><ArrowUpTrayIcon className="w-4 h-4" /><span>Import txt</span></div></Dropdown.Item>
+              </Dropdown.Menu></Dropdown.Popover></Dropdown>
           </div>
+<<<<<<< Updated upstream
           <div className="flex items-center rounded-xl border border-border bg-card p-1 shrink-0">
             <button aria-label="Comfortable view" aria-pressed={viewMode === "comfortable"} onClick={() => setViewMode("comfortable")} className={`h-8 w-8 rounded-lg flex items-center justify-center transition-colors ${viewMode === "comfortable" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`} title="Comfortable">
               <Squares2X2Icon className="w-4 h-4" />
@@ -717,18 +452,17 @@ export function SpaceClient({
           </div>
         </div>
       </div>
+=======
+        }
+        toolbar={<EntryToolbar search={search} onSearchChange={setSearch} viewMode={viewMode} onViewModeChange={setViewMode} categoryFilter={categoryFilter} onCategoryFilterChange={setCategoryFilter} sortBy={sortBy} onSortByChange={setSortBy} filterOpen={filterOpen} onFilterOpenChange={setFilterOpen} activeFilterCount={activeFilterCount} categories={allCategories} onClearFilters={() => { setCategoryFilter("all"); setSortBy("updated"); setSearch(""); }} />}
+      />
+>>>>>>> Stashed changes
 
       {space.entries.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20">
-          <div className="w-16 h-16 rounded-2xl bg-muted border border-border flex items-center justify-center mb-4">
-            <LockClosedIcon className="w-8 h-8 text-muted-foreground" />
-          </div>
-          <p className="text-base font-medium text-foreground mb-1">No accounts yet</p>
-          <p className="text-sm text-muted-foreground mb-6">Add your first account to this space</p>
-          <Button onPress={() => { setEditing(null); setIsAddOpen(true); }} className="bg-primary hover:bg-primary-hover text-primary-foreground font-medium h-9">+ Account</Button>
-        </div>
+        <div className="flex flex-col items-center justify-center py-20"><div className="w-16 h-16 rounded-2xl bg-muted border border-border flex items-center justify-center mb-4"><LockClosedIcon className="w-8 h-8 text-muted-foreground" /></div><p className="text-base font-medium text-foreground mb-1">No accounts yet</p><p className="text-sm text-muted-foreground mb-6">Add your first account to this space</p><Button onPress={() => { setEditing(null); setIsAddOpen(true); }} className="bg-primary hover:bg-primary-hover text-primary-foreground font-medium h-9">+ Account</Button></div>
       ) : (
         <>
+<<<<<<< Updated upstream
           <div className="flex items-center justify-between px-1 mb-3">
             <span className="text-sm text-muted-foreground">
               {search.trim() || categoryFilter !== "all" || sortBy !== "updated" ? `${filteredEntries.length} of ${space.entries.length} total` : `${space.entries.length} total`}
@@ -1196,181 +930,25 @@ export function SpaceClient({
             </form>
           </div>
         </div>
+=======
+          <div className="flex items-center justify-between px-1 mb-3"><span className="text-sm text-muted-foreground">{search.trim() || categoryFilter !== "all" || sortBy !== "updated" ? `${filteredEntries.length} of ${space.entries.length} total` : `${space.entries.length} total`}</span><span className="text-xs text-muted-foreground hidden sm:inline">updated {timeAgo(space.updatedAt)}</span></div>
+          <div className="flex items-center gap-2 px-1 mb-4"><Checkbox isSelected={filteredEntries.length > 0 && filteredEntries.every((e) => selected.has(e.id))} onChange={() => { const ids = filteredEntries.map((e) => e.id); const all = ids.every((id) => selected.has(id)); if (all) ids.forEach((id) => { if (selected.has(id)) toggle(id); }); else ids.forEach((id) => { if (!selected.has(id)) toggle(id); }); }} className="text-sm"><Checkbox.Content><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control>Select all</Checkbox.Content></Checkbox><span className="text-sm text-muted-foreground ml-auto">{selected.size} selected{filteredEntries.length !== space.entries.length ? ` • ${filteredEntries.length} shown` : ""}</span></div>
+          {filteredEntries.length === 0 ? (<div className="flex flex-col items-center justify-center py-12 border border-dashed border-border rounded-xl bg-muted/20"><p className="text-sm font-medium text-foreground mb-1">No matches</p><p className="text-sm text-muted-foreground mb-4">Try adjusting search or filters.</p><Button variant="tertiary" onPress={() => { setSearch(""); setCategoryFilter("all"); setSortBy("updated"); }}>Clear filters</Button></div>) : (
+            <div className={`grid mb-8 ${viewMode === "compact" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"}`}>
+              {filteredEntries.map((e) => (<EntryCard key={e.id} entry={e} viewMode={viewMode} isSelected={selected.has(e.id)} onToggleSelect={() => toggle(e.id)} onMenuAt={(x, y) => setEntryCtx({ id: e.id, x, y })} onContextMenu={(ev) => { ev.preventDefault(); setEntryCtx({ id: e.id, x: ev.clientX, y: ev.clientY }); }} showPasswordMap={showPasswords} onToggleShow={toggleShow} copiedId={copiedId} onCopy={handleCopy} />))}
+              <Card className={`border-2 border-dashed border-border bg-muted/20 hover:border-border-strong hover:bg-muted/30 transition-colors cursor-pointer shadow-none rounded-2xl flex flex-col justify-center h-full ${viewMode === "compact" ? "min-h-[52px]" : "min-h-[180px]"}`} onClick={() => { setEditing(null); setIsAddOpen(true); }}><Card.Content className={`flex flex-col items-center justify-center text-center ${viewMode === "compact" ? "px-2.5 py-1.5" : "p-6 py-8"}`}><div className={`${viewMode === "compact" ? "w-6 h-6 mb-1" : "w-12 h-12 mb-3"} rounded-xl bg-muted border border-border flex items-center justify-center`}><PlusIcon className={`${viewMode === "compact" ? "w-3.5 h-3.5" : "w-6 h-6"} text-muted-foreground`} /></div><p className={`${viewMode === "compact" ? "text-xs" : "text-sm"} font-semibold text-foreground ${viewMode === "compact" ? "" : "mb-1"}`}>Create a new account</p>{viewMode !== "compact" && <p className="text-sm text-muted-foreground">Add credentials to this space.</p>}</Card.Content></Card>
+            </div>
+          )}
+          {entryCtx && entryCtxEntry && (<div data-context-menu className="fixed z-40 min-w-[180px] bg-popover border border-border shadow-sm rounded-xl p-1 flex flex-col" style={{ left: Math.min(entryCtx.x, typeof window !== "undefined" ? window.innerWidth - 190 : entryCtx.x), top: entryCtx.y }} onClick={(ev) => ev.stopPropagation()}><button className="text-left px-3 py-2 text-sm rounded-lg hover:bg-muted text-foreground flex items-center gap-2" onClick={() => { setEntryCtx(null); setEditing(entryCtxEntry); setIsAddOpen(true); }}><PencilSquareIcon className="w-4 h-4" />Edit</button><button className="text-left px-3 py-2 text-sm rounded-lg hover:bg-muted text-foreground flex items-center gap-2" onClick={async () => { await navigator.clipboard.writeText(entryCtxEntry.password); setCopiedId(entryCtxEntry.id); window.setTimeout(() => setCopiedId((cur) => (cur === entryCtxEntry.id ? null : cur)), 1500); setEntryCtx(null); }}><ClipboardDocumentIcon className="w-4 h-4" />Copy password</button><button className="text-left px-3 py-2 text-sm rounded-lg hover:bg-muted text-foreground flex items-center gap-2" onClick={() => { setEntryCtx(null); setTransferOpen({ ids: [entryCtx.id] }); }}><ArrowsRightLeftIcon className="w-4 h-4" />Transfer</button><button className="text-left px-3 py-2 text-sm rounded-lg hover:bg-destructive/10 text-destructive flex items-center gap-2" onClick={() => { setEntryCtx(null); setDeleteTarget(entryCtxEntry); }}><TrashIcon className="w-4 h-4" />Delete</button></div>)}
+        </>
+>>>>>>> Stashed changes
       )}
 
-      {/* Generator modal — nested over Add/Edit account — same clean shell as Add account */}
-      {isAddOpen && showGenModal && (
-        <div
-          className="fixed inset-0 z-[60] flex items-center justify-center p-0 sm:p-4 bg-foreground/40 backdrop-blur-[2px] overflow-y-auto"
-          onClick={() => setShowGenModal(false)}
-          role="dialog"
-          aria-modal="true"
-        >
-          <div className="bg-card rounded-t-2xl sm:rounded-2xl border-t sm:border border-border shadow-sm w-full sm:max-w-lg max-h-[90dvh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-4 sm:py-5 border-b border-border shrink-0">
-              <h3 className="text-lg font-semibold text-foreground">Generate password</h3>
-              <Button variant="ghost" isIconOnly size="sm" onPress={() => setShowGenModal(false)} aria-label="Close" className="shrink-0 -mr-1">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </Button>
-            </div>
-            <div className="flex-1 overflow-y-auto px-3 sm:px-4 py-3 overscroll-contain">
-              <PasswordGenerator
-                onChoose={(pwd) => {
-                  if (editing) setEditPasswordValue(pwd);
-                  else setCreatePasswordValue(pwd);
-                  setGenPassword(pwd);
-                  setShowGenModal(false);
-                  setShowPassword(true);
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {transferOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-foreground/40 backdrop-blur-[2px]" onClick={() => setTransferOpen(null)} role="dialog" aria-modal="true">
-          <div className="bg-card rounded-t-2xl sm:rounded-2xl border-t sm:border border-border shadow-sm w-full sm:max-w-md p-4 sm:p-6 flex flex-col gap-4" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                <ArrowsRightLeftIcon className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-foreground">Transfer {transferOpen.ids.length} account(s)</h3>
-                <p className="text-sm text-muted-foreground">Choose a target space</p>
-              </div>
-            </div>
-            <Select selectedKey={transferTarget} onSelectionChange={(k) => setTransferTarget(String(k))} className="w-full">
-              <Label className="text-sm font-medium text-foreground mb-2">Target space</Label>
-              <Select.Trigger>
-                <Select.Value />
-              </Select.Trigger>
-              <Select.Popover className="bg-popover border border-border shadow-sm">
-                <ListBox className="p-1">
-                  {allSpaces.filter((s) => s.id !== space.id).map((s) => (
-                    <ListBox.Item key={s.id} id={s.id} className="text-popover-foreground data-[focused]:bg-muted">{s.name} — {s.type}</ListBox.Item>
-                  ))}
-                </ListBox>
-              </Select.Popover>
-            </Select>
-            <div className="flex gap-3 pt-2">
-              <Button variant="tertiary" className="flex-1" onPress={() => setTransferOpen(null)} isDisabled={isTransferring}>Cancel</Button>
-              <Button variant="primary" className="flex-1" isDisabled={!transferTarget || isTransferring} onPress={handleTransfer}>{isTransferring ? "Transferring…" : "Transfer"}</Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Single delete confirm — alert modal */}
-      {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-foreground/40 backdrop-blur-[2px]" onClick={() => !isDeleting && setDeleteTarget(null)} role="alertdialog" aria-modal="true" aria-label="Confirm delete">
-          <div className="bg-card rounded-t-2xl sm:rounded-2xl border-t sm:border border-border shadow-sm w-full sm:max-w-md flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-start gap-4 p-6">
-              <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center shrink-0">
-                <ExclamationTriangleIcon className="w-5 h-5 text-destructive" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-base font-semibold text-foreground">Delete account?</h3>
-                <p className="text-sm text-muted-foreground mt-1">This will permanently delete <span className="font-medium text-foreground">{deleteTarget.title ?? deleteTarget.email}</span>. This action cannot be undone.</p>
-              </div>
-            </div>
-            <div className="flex gap-3 p-6 pt-0 sm:pt-2">
-              <Button variant="tertiary" className="flex-1 h-10" onPress={() => setDeleteTarget(null)} isDisabled={isDeleting}>Cancel</Button>
-              <Button variant="primary" className="flex-1 h-10 bg-destructive hover:bg-destructive/90 text-destructive-foreground font-medium" onPress={confirmSingleDelete} isDisabled={isDeleting}>{isDeleting ? "Deleting…" : "Delete"}</Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Bulk delete confirm */}
-      {bulkDeleteOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-foreground/40 backdrop-blur-[2px]" onClick={() => !isDeleting && setBulkDeleteOpen(false)} role="alertdialog" aria-modal="true" aria-label="Confirm bulk delete">
-          <div className="bg-card rounded-t-2xl sm:rounded-2xl border-t sm:border border-border shadow-sm w-full sm:max-w-md flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-start gap-4 p-6">
-              <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center shrink-0">
-                <ExclamationTriangleIcon className="w-5 h-5 text-destructive" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-base font-semibold text-foreground">Delete {selected.size} account(s)?</h3>
-                <p className="text-sm text-muted-foreground mt-1">This will permanently delete the selected accounts. This action cannot be undone.</p>
-              </div>
-            </div>
-            <div className="flex gap-3 p-6 pt-0 sm:pt-2">
-              <Button variant="tertiary" className="flex-1 h-10" onPress={() => setBulkDeleteOpen(false)} isDisabled={isDeleting}>Cancel</Button>
-              <Button variant="primary" className="flex-1 h-10 bg-destructive hover:bg-destructive/90 text-destructive-foreground font-medium" onPress={confirmBulkDelete} isDisabled={isDeleting}>{isDeleting ? "Deleting…" : `Delete (${selected.size})`}</Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {importOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-foreground/40 backdrop-blur-[2px] overflow-y-auto" onClick={() => setImportOpen(false)} role="dialog" aria-modal="true">
-          <div className="bg-card rounded-t-2xl sm:rounded-2xl border-t sm:border border-border shadow-sm w-full sm:max-w-5xl max-h-[90dvh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-4 border-b border-border shrink-0">
-              <div>
-                <h3 className="text-lg font-semibold text-foreground">Import accounts</h3>
-                <p className="text-xs text-muted-foreground">Upload txt (CSV or JSON), review, edit or remove rows, then import.</p>
-              </div>
-              <Button variant="ghost" isIconOnly size="sm" onPress={() => setImportOpen(false)} aria-label="Close">✕</Button>
-            </div>
-
-            <div className="p-4 sm:p-6 space-y-4 flex-1 overflow-y-auto">
-              <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-                <input ref={fileRef} type="file" accept=".txt,.csv,.json" className="hidden" onChange={(e) => handleFile(e.target.files?.[0] ?? null)} />
-                <Button variant="tertiary" onPress={() => fileRef.current?.click()} className="shrink-0">Choose txt file</Button>
-                <span className="text-sm text-muted-foreground truncate">{importFileName || "No file chosen"}</span>
-                <span className="ml-auto text-xs text-muted-foreground hidden sm:block">Supports: account;password & title,email,password,url,description,category or JSON</span>
-              </div>
-              {importError && <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">{importError}</p>}
-
-              {importRows.length > 0 && (
-                <div className="border border-border rounded-xl overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm min-w-[820px]">
-                      <thead className="bg-muted/40 border-b border-border">
-                        <tr className="text-xs text-muted-foreground">
-                          <th className="text-left font-medium px-3 py-2 w-[140px]">Title</th>
-                          <th className="text-left font-medium px-3 py-2">Login</th>
-                          <th className="text-left font-medium px-3 py-2">Password</th>
-                          <th className="text-left font-medium px-3 py-2">URL</th>
-                          <th className="text-left font-medium px-3 py-2">Note</th>
-                          <th className="text-left font-medium px-3 py-2 w-[120px]">Category</th>
-                          <th className="px-3 py-2 w-12"></th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-border">
-                        {importRows.map((r) => (
-                          <tr key={r.uid} className="hover:bg-muted/20">
-                            <td className="px-2 py-1.5"><Input value={r.title} onChange={(e) => updateImportRow(r.uid, { title: (e.target as HTMLInputElement).value })} placeholder="Title" className="text-sm" /></td>
-                            <td className="px-2 py-1.5"><Input value={r.email} onChange={(e) => updateImportRow(r.uid, { email: (e.target as HTMLInputElement).value })} placeholder="username" className="text-sm" /></td>
-                            <td className="px-2 py-1.5"><Input value={r.password} onChange={(e) => updateImportRow(r.uid, { password: (e.target as HTMLInputElement).value })} placeholder="••••" className="text-sm" /></td>
-                            <td className="px-2 py-1.5"><Input value={r.url} onChange={(e) => updateImportRow(r.uid, { url: (e.target as HTMLInputElement).value })} placeholder="https://" className="text-sm" /></td>
-                            <td className="px-2 py-1.5"><Input value={r.description} onChange={(e) => updateImportRow(r.uid, { description: (e.target as HTMLInputElement).value })} placeholder="note" className="text-sm" /></td>
-                            <td className="px-2 py-1.5"><Input value={r.category} onChange={(e) => updateImportRow(r.uid, { category: (e.target as HTMLInputElement).value })} placeholder="gmail" className="text-sm" /></td>
-                            <td className="px-2 py-1.5"><Button size="sm" variant="tertiary" onPress={() => setImportRows((p) => p.filter((x) => x.uid !== r.uid))} className="h-8">Remove</Button></td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  <div className="flex items-center justify-between px-3 py-2 bg-muted/20 border-t border-border">
-                    <span className="text-xs text-muted-foreground">{importRows.length} rows to import</span>
-                    <Button size="sm" variant="tertiary" onPress={() => setImportRows([])}>Clear all</Button>
-                  </div>
-                </div>
-              )}
-              {importRows.length === 0 && !importError && <p className="text-sm text-muted-foreground border border-dashed border-border rounded-xl p-8 text-center">Choose a txt file to preview. You can edit any cell or remove rows before importing.</p>}
-            </div>
-
-            <div className="flex gap-3 p-4 sm:p-6 border-t border-border shrink-0 bg-card">
-              <Button variant="tertiary" className="flex-1" onPress={() => setImportOpen(false)}>Cancel</Button>
-              <Button variant="primary" className="flex-1" isDisabled={importRows.length === 0} onPress={confirmImport}>Import {importRows.length ? `(${importRows.length})` : ""}</Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <EntryFormDialog isOpen={isAddOpen} onClose={() => { setIsAddOpen(false); setEditing(null); setGenPassword(null); setGenCreate(false); }} editing={editing} spaceId={space.id} allCategories={allCategories} createEntry={createEntry} updateEntry={updateEntry} genPassword={genPassword} genCreate={genCreate} onGenConsumed={() => { setGenPassword(null); setGenCreate(false); }} />
+      <TransferDialog isOpen={!!transferOpen} onClose={() => setTransferOpen(null)} onTransfer={handleTransfer} spaces={allSpaces} currentSpaceId={space.id} target={transferTarget} onTargetChange={setTransferTarget} isTransferring={isTransferring} count={transferOpen?.ids.length ?? 0} />
+      <ConfirmDialog isOpen={!!deleteTarget} onClose={() => !isDeleting && setDeleteTarget(null)} onConfirm={confirmSingleDelete} title="Delete account?" description={`This will permanently delete ${deleteTarget?.title ?? deleteTarget?.email}. This action cannot be undone.`} confirmText={isDeleting ? "Deleting…" : "Delete"} isLoading={isDeleting} variant="danger" />
+      <ConfirmDialog isOpen={bulkDeleteOpen} onClose={() => !isDeleting && setBulkDeleteOpen(false)} onConfirm={confirmBulkDelete} title={`Delete ${selected.size} account(s)?`} description="This will permanently delete the selected accounts. This action cannot be undone." confirmText={isDeleting ? "Deleting…" : `Delete (${selected.size})`} isLoading={isDeleting} variant="danger" />
+      <ImportDialog isOpen={importOpen} onClose={() => setImportOpen(false)} rows={importRows} onRowsChange={setImportRows} fileName={importFileName} onFile={handleFile} error={importError} onConfirm={confirmImport} />
     </div>
   );
 }

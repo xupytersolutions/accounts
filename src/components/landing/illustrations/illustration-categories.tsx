@@ -1,0 +1,15 @@
+export function IllustrationCategories() {
+  return (
+    <svg viewBox="0 0 480 320" className="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden>
+      <rect x="72" y="36" width="336" height="212" rx="16" fill="white" stroke="#111" strokeWidth="1.2" /><rect x="72" y="36" width="336" height="34" rx="16" fill="#F4F4F5" /><rect x="88" y="47" width="72" height="12" rx="6" fill="#111" /><rect x="320" y="47" width="72" height="12" rx="6" fill="#E4E4E7" />
+      <rect x="96" y="88" width="92" height="72" rx="14" fill="#EFF6FF" stroke="#BFDBFE" /><circle cx="142" cy="112" r="16" fill="#006FEE" /><text x="142" y="118" textAnchor="middle" fontSize="14">✉️</text><text x="142" y="144" textAnchor="middle" fontSize="9" fontWeight="700" fill="#1E3A8A">Gmail</text>
+      <rect x="200" y="88" width="92" height="72" rx="14" fill="#F0FDF4" stroke="#BBF7D0" /><circle cx="246" cy="112" r="16" fill="#17C964" /><text x="246" y="118" textAnchor="middle" fontSize="14">🏦</text><text x="246" y="144" textAnchor="middle" fontSize="9" fontWeight="700" fill="#14532D">Banking</text>
+      <rect x="304" y="88" width="92" height="72" rx="14" fill="#FFFBEB" stroke="#FDE68A" /><circle cx="350" cy="112" r="16" fill="#F5A524" /><text x="350" y="118" textAnchor="middle" fontSize="14">☁️</text><text x="350" y="144" textAnchor="middle" fontSize="9" fontWeight="700" fill="#92400E">Hosting</text>
+      <rect x="96" y="172" width="92" height="56" rx="14" fill="#FDF2F8" stroke="#FBCFE8" /><circle cx="142" cy="192" r="12" fill="#F31260" /><text x="142" y="196" textAnchor="middle" fontSize="11" fill="white">🎨</text><text x="142" y="214" textAnchor="middle" fontSize="8" fontWeight="700" fill="#831843">Design</text>
+      <rect x="200" y="172" width="92" height="56" rx="14" fill="#F5F3FF" stroke="#DDD6FE" /><circle cx="246" cy="192" r="12" fill="#7828C8" /><text x="246" y="196" textAnchor="middle" fontSize="11" fill="white">💼</text><text x="246" y="214" textAnchor="middle" fontSize="8" fontWeight="700" fill="#4C1D95">Work</text>
+      <rect x="304" y="172" width="92" height="56" rx="14" fill="#FFF1F1" stroke="#FECACA" /><circle cx="350" cy="192" r="12" fill="#111" /><text x="350" y="196" textAnchor="middle" fontSize="11">+</text><text x="350" y="214" textAnchor="middle" fontSize="8" fontWeight="700">Add New</text>
+      <circle cx="118" cy="262" r="10" fill="#006FEE" stroke="white" strokeWidth="2" /><circle cx="142" cy="262" r="10" fill="#17C964" stroke="white" strokeWidth="2" /><circle cx="166" cy="262" r="10" fill="#F5A524" stroke="white" strokeWidth="2" /><circle cx="190" cy="262" r="10" fill="#F31260" stroke="white" strokeWidth="2" /><circle cx="214" cy="262" r="10" fill="#7828C8" stroke="white" strokeWidth="2" /><rect x="236" y="254" width="56" height="16" rx="8" fill="#111" /><text x="264" y="265" textAnchor="middle" fill="white" fontSize="7" fontWeight="700">PICK COLOR</text>
+      <circle cx="420" cy="264" r="12" fill="#111" /><rect x="410" y="278" width="20" height="28" rx="6" fill="#111" />
+    </svg>
+  );
+}

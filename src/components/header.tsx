@@ -5,17 +5,17 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ThemeSwitcher } from "./theme-switcher";
 
-type SiteHeaderProps = {
+type HeaderProps = {
   logoHref?: string;
   actions?: React.ReactNode;
   showThemeSwitcher?: boolean;
 };
 
-export function SiteHeader({
+export function Header({
   logoHref = "/",
   actions,
   showThemeSwitcher = true,
-}: SiteHeaderProps) {
+}: HeaderProps) {
   const [theme, setTheme] = useState<string | null>(null);
 
   useEffect(() => {
@@ -32,9 +32,6 @@ export function SiteHeader({
     return () => observer.disconnect();
   }, []);
 
-  // `logo-dark.png` → dark theme, `logo-light.png` → light theme.
-  // If your files are named inversely (dark-colored logo for light bg),
-  // just swap the two strings below.
   const logoSrc =
     theme === "light" ? "/logo-light.png" : "/logo-dark.png";
 
@@ -67,3 +64,5 @@ export function SiteHeader({
     </header>
   );
 }
+
+export const SiteHeader = Header;
