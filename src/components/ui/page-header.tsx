@@ -27,9 +27,9 @@ export function PageHeader({
 }: PageHeaderProps) {
   return (
     <div className="mb-6 sm:mb-8">
-      {/* Breadcrumbs */}
+      {/* Breadcrumbs — desktop only */}
       {breadcrumbs && breadcrumbs.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 text-sm mb-4 min-w-0">
+        <div className="hidden sm:flex flex-wrap items-center gap-2 text-sm mb-4 min-w-0">
           {breadcrumbs.map((crumb, index) => {
             const isLast = index === breadcrumbs.length - 1;
 
@@ -82,9 +82,9 @@ export function PageHeader({
         </div>
       )}
 
-      {/* Title, Description, and Action */}
+      {/* Title, Description, and Action — stack on mobile for long titles, row on desktop; action right-aligned on both */}
       {title && (
-        <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-3 flex-wrap mb-1 sm:mb-2">
               <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
@@ -116,7 +116,7 @@ export function PageHeader({
               </p>
             )}
           </div>
-          {action && <div className="shrink-0 self-start sm:self-auto">{action}</div>}
+          {action && <div className="shrink-0 self-end sm:self-auto">{action}</div>}
         </div>
       )}
     </div>

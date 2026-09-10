@@ -50,15 +50,11 @@ export function PasswordGenerator({ onChoose, hideAddToSpace }: PasswordGenerato
   const copy = async () => { if (!password) return; await navigator.clipboard.writeText(password); setCopied(true); setTimeout(() => setCopied(false), 1800); };
 
   const handleAddToSpace = async () => {
-<<<<<<< Updated upstream
     if (!session?.user) {
       setShowLoginAlert(true);
       setTimeout(() => redirect('/login'), 2000);
       return;
     }
-=======
-    if (!session?.user) { setShowLoginAlert(true); setTimeout(() => redirect('/login'), 2000); return; }
->>>>>>> Stashed changes
     setShowSpaceModal(true);
     if (spaces.length === 0 && !spacesLoading) {
       setSpacesLoading(true); setSpacesError(null);
@@ -67,13 +63,9 @@ export function PasswordGenerator({ onChoose, hideAddToSpace }: PasswordGenerato
   };
 
   const handleSelectSpace = (spaceId: string) => {
-<<<<<<< Updated upstream
     try {
       sessionStorage.setItem("one-account:genPassword", password);
     } catch {}
-=======
-    try { sessionStorage.setItem("one-account:genPassword", password); } catch {}
->>>>>>> Stashed changes
     setShowSpaceModal(false);
     const params = new URLSearchParams({ create: "1", gen: "1", password });
     router.push(`/spaces/${spaceId}?${params.toString()}`);
@@ -100,7 +92,6 @@ export function PasswordGenerator({ onChoose, hideAddToSpace }: PasswordGenerato
           <div className="pt-5 flex flex-col gap-5">
             <PasswordControls mode={mode} opts={opts} onOptsChange={setOpts} pinLength={pinLength} onPinLengthChange={setPinLength} ppOpts={ppOpts} onPpOptsChange={setPpOpts} />
           </div>
-<<<<<<< Updated upstream
 
           {/* add to space / choose footer */}
           {onChoose ? (
@@ -130,9 +121,6 @@ export function PasswordGenerator({ onChoose, hideAddToSpace }: PasswordGenerato
               )}
             </div>
           ) : null}
-=======
-          {onChoose ? <div className="pt-4 flex flex-col gap-3"><Button onPress={() => onChoose(password)} className="w-full bg-primary hover:bg-primary-hover text-primary-foreground font-medium">Choose this password</Button></div> : !hideAddToSpace ? <div className="pt-6 mt-2 border-t border-border flex flex-col gap-3"><Button onPress={handleAddToSpace} className="w-full bg-primary hover:bg-primary-hover text-primary-foreground font-medium">Add to my space</Button>{showLoginAlert && <Alert status="default"><Alert.Indicator /><Alert.Content><Alert.Title>Login to save your password</Alert.Title><Alert.Description className="text-foreground">You need to be signed in to save generated passwords to a space. <Link href="/login" className="underline font-medium">Sign in with Google</Link></Alert.Description></Alert.Content></Alert>}</div> : null}
->>>>>>> Stashed changes
         </Card.Content>
       </Card>
       <SpacePickerDialog isOpen={showSpaceModal} onClose={() => setShowSpaceModal(false)} spaces={spaces} loading={spacesLoading} error={spacesError} password={password} onSelect={handleSelectSpace} />

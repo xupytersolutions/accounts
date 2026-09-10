@@ -75,7 +75,7 @@ export function DashboardClient({ spaces, createSpace, deleteSpace, updateSpace 
         </div>
       ) : (
         <>
-          <div className={`grid mb-8 ${viewMode === "compact" ? "grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"}`}>
+          <div className={`grid mb-8 ${viewMode === "compact" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"}`}>
             {filteredSpaces.map((s) => (
               <SpaceCard key={s.id} space={s} viewMode={viewMode} onOpen={() => router.push(`/spaces/${s.id}`)} onEdit={() => setEditingSpace(s)} onDelete={() => setDeleteTarget(s)} onContextMenu={(x, y) => setCtx({ id: s.id, x, y })} />
             ))}
