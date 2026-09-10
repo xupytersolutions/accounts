@@ -1,6 +1,7 @@
 "use client";
 
-import { MoonIcon, SunIcon } from "@heroicons/react/24/solid";
+import { MoonIcon } from "@heroicons/react/24/outline";
+import { SunIcon } from "@heroicons/react/24/solid";
 import { Button } from "@heroui/react";
 import { useEffect, useState } from "react";
 
@@ -40,7 +41,7 @@ export function ThemeSwitcher() {
       onPress={toggleTheme}
       aria-label="Toggle theme"
     >
-      {theme === "dark" ?  <SunIcon /> : <MoonIcon />}
+      {theme === "dark" ? <SunIcon /> : <MoonIcon />}
     </Button>
   );
 }

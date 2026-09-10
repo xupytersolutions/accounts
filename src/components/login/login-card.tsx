@@ -1,7 +1,6 @@
 "use client";
-import { Button, Card, Separator } from "@heroui/react";
-import Link from "next/link";
-import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+import { Button, Card, Checkbox } from "@heroui/react";
+import Image from "next/image";
 
 function GoogleIcon() {
   return (
@@ -16,21 +15,34 @@ function GoogleIcon() {
 
 export function LoginCard({ action }: { action: () => Promise<void> }) {
   return (
-    <Card className="w-full max-w-md border border-border bg-card shadow-sm">
-      <Card.Header className="flex flex-col gap-2 px-8 pb-0 pt-8">
-        <Card.Title className="text-2xl font-bold text-foreground">Welcome back</Card.Title>
-        <Card.Description className="text-base text-muted-foreground">Sign in with Google to access your vault. No passwords stored here — we delegate to Google.</Card.Description>
-      </Card.Header>
-      <Card.Content className="gap-6 px-8 pb-8 pt-6">
-        <form action={action}>
-          <Button type="submit" size="lg" className="w-full bg-foreground hover:bg-foreground/90 text-background font-semibold">
-            <span className="flex items-center gap-3"><GoogleIcon /> Continue with Google</span>
-          </Button>
-        </form>
-        <Separator className="bg-border" />
-        <p className="text-center text-sm text-muted-foreground">By continuing you agree to store account credentials encrypted in your private spaces.</p>
-        <div className="text-center"><Link href="/" className="text-sm text-primary hover:underline flex items-center justify-center gap-2"><ArrowLeftIcon className="h-4 w-4" /> Back to public home</Link></div>
-      </Card.Content>
-    </Card>
+    <div className="min-h-120 flex items-center">
+      <Card className="w-full max-w-md p-0 overflow-hidden ">
+        <Card.Header className="p-0">
+          <Image alt="Login To One Password" src={'/login-vector.jpg'} height={200} width={200} className="h-40 w-full object-cover" />
+        </Card.Header>
+        <Card.Content className="gap-6 px-8 pb-8 pt-6">
+          <div>
+            <h2 className="text-2xl font-bold text-foreground">Welcome back</h2>
+            <p className="text-sm text-muted-foreground">Sign in with Google to access your vault. Make your password easily accessible by google login on multiple device</p>
+          </div>
+
+          <form action={action}>
+            <Button type="submit" size="lg" className="w-full bg-foreground hover:bg-foreground/90 text-background font-semibold">
+              <span className="flex items-center gap-3"><GoogleIcon /> Continue with Google</span>
+            </Button>
+          </form>
+          <div>
+            <Checkbox name="basic-terms">
+              <Checkbox.Content>
+                <Checkbox.Control>
+                  <Checkbox.Indicator />
+                </Checkbox.Control>
+                <span className="text-xs text-muted-foreground">By continuing you agree to store account credentials encrypted in your private spaces.</span>
+              </Checkbox.Content>
+            </Checkbox>
+          </div>
+        </Card.Content>
+      </Card>
+    </div >
   );
 }

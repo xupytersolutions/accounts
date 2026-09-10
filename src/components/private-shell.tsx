@@ -8,18 +8,19 @@ import { updateProfile } from "@/lib/actions";
 import { ChevronDownIcon, UserIcon, ArrowRightStartOnRectangleIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { timeAgo } from "@/lib/utils/time";
 import { AccountForm } from "./account/account-form";
+import { useMe } from "@/lib/query/use-me";
 
 export function PrivateShell({
   children,
   user,
-  createdAt,
   signOutAction,
 }: {
   children: React.ReactNode;
   user: { email?: string | null; name?: string | null; image?: string | null };
-  createdAt?: Date | string | null;
   signOutAction: () => Promise<void>;
 }) {
+  const { data: me } = useMe();
+  const createdAt = me?.createdAt ?? null;
   const router = useRouter();
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -91,13 +92,13 @@ export function PrivateShell({
               </div>
               <ChevronDownIcon className="w-4 h-4 text-muted-foreground shrink-0" />
             </Button>
-            <Dropdown.Popover className="bg-popover border border-border shadow-sm rounded-xl min-w-[260px] max-w-[320px]">
-              <Dropdown.Menu aria-label="User menu" className="p-1" onAction={handleAction}>
+            <Dropdown.Popover className="bg-popover border border-border shadow-sm rounded-xl p-0 min-w-[260px] max-w-[320px]">
+              <Dropdown.Menu aria-label="User menu" onAction={handleAction} className="p-0 pb-3">
                 <Dropdown.Item
                   id="account-header"
                   textValue="Profile"
                   isDisabled
-                  className="rounded-xl opacity-100 cursor-default data-[focused]:bg-transparent py-2"
+                  className="rounded-none mb-2 opacity-100 cursor-default bg-muted py-3 border-b " 
                 >
                   <div className="flex flex-col gap-0.5 min-w-0 max-w-[260px]">
                     <p className="font-semibold text-foreground truncate text-sm leading-tight">{user.name ?? "User"}</p>
@@ -110,7 +111,7 @@ export function PrivateShell({
                 <Dropdown.Item
                   id="account"
                   textValue="Account"
-                  className="rounded-lg text-foreground data-[focused]:bg-muted data-[focused]:text-foreground"
+                  className="rounded-lg text-foreground mx-2 w-auto data-[focused]:bg-muted data-[focused]:text-foreground"
                 >
                   <div className="flex items-center gap-2">
                     <UserIcon className="w-4 h-4" />
@@ -120,7 +121,7 @@ export function PrivateShell({
                 <Dropdown.Item
                   id="logout"
                   textValue="Sign out"
-                  className="rounded-lg text-destructive data-[focused]:bg-destructive/10 data-[focused]:text-destructive"
+                  className="rounded-lg text-destructive mx-2 w-auto data-[focused]:bg-destructive/10 data-[focused]:text-destructive"
                 >
                   <div className="flex items-center gap-2">
                     <ArrowRightStartOnRectangleIcon className="w-4 h-4" />

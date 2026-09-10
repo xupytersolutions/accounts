@@ -9,10 +9,13 @@ import { Icon } from "@/components/ui/icon";
 import { useModalLock } from "@/lib/hooks/use-modal-lock";
 import type { SpaceFormDialogProps } from "@/lib/types";
 
-export function SpaceFormDialog({ isOpen, onClose, onSubmit, initialData, title, submitLabel }: SpaceFormDialogProps) {
+export function SpaceFormDialog({ isOpen, onClose, onSubmit, initialData, title, submitLabel, isPending }: SpaceFormDialogProps) {
   const [color, setColor] = useState(COLORS[0]);
   const [icon, setIcon] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [nameVal, setNameVal] = useState("");
+  const [typeVal, setTypeVal] = useState("personal");
+  const [descVal, setDescVal] = useState("");
 
   useModalLock(isOpen, onClose);
 
@@ -22,23 +25,34 @@ export function SpaceFormDialog({ isOpen, onClose, onSubmit, initialData, title,
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setColor(initialData.color || COLORS[0]);
       setIcon(initialData.icon || "");
+      setNameVal(initialData.name ?? "");
+      setTypeVal(initialData.type ?? "personal");
+      setDescVal(initialData.description ?? "");
     } else {
       setColor(COLORS[0]);
       setIcon("");
+      setNameVal("");
+      setTypeVal("personal");
+      setDescVal("");
     }
     setFieldErrors({});
   }, [isOpen, initialData]);
 
   if (!isOpen) return null;
 
-  const handleAction = async (fd: FormData) => {
+  const isDirty = !initialData
+    ? nameVal.trim() !== "" || descVal.trim() !== "" || typeVal !== "personal" || color !== COLORS[0] || icon !== ""
+    : nameVal.trim() !== (initialData.name ?? "") || typeVal !== (initialData.type ?? "personal") || descVal.trim() !== (initialData.description ?? "") || color !== (initialData.color || COLORS[0]) || icon !== (initialData.icon || "");
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     setFieldErrors({});
     const toCheck = {
-      name: String(fd.get("name") || "").trim(),
-      type: String(fd.get("type") || "personal"),
-      description: String(fd.get("description") || "").trim() || null,
-      color: String(fd.get("color") || "").trim() || null,
-      icon: String(fd.get("icon") || "").trim() || null,
+      name: nameVal.trim(),
+      type: typeVal,
+      description: descVal.trim() || null,
+      color: color || null,
+      icon: icon || null,
     };
     const parsed = spaceSchema.safeParse(toCheck);
     if (!parsed.success) {
@@ -48,11 +62,11 @@ export function SpaceFormDialog({ isOpen, onClose, onSubmit, initialData, title,
       return;
     }
     try {
-      await onSubmit(fd);
+      await onSubmit(parsed.data);
       onClose();
       setFieldErrors({});
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "Failed to save space";
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to save space";
       const lower = msg.toLowerCase();
       if (lower.includes("description")) setFieldErrors({ description: msg });
       else setFieldErrors({ name: msg });
@@ -69,18 +83,15 @@ export function SpaceFormDialog({ isOpen, onClose, onSubmit, initialData, title,
           </Button>
         </div>
 
-        <form noValidate action={handleAction} className="flex flex-col flex-1 min-h-0">
-          {initialData && <input type="hidden" name="spaceId" value={initialData.id} />}
-          <input type="hidden" name="color" value={color} />
-          <input type="hidden" name="icon" value={icon} />
+        <form noValidate onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
           <div className="flex-1 overflow-y-auto p-6 space-y-4 overscroll-contain">
-            <TextField name="name" isRequired isInvalid={!!fieldErrors.name} validationBehavior="aria" className="w-full" defaultValue={initialData?.name ?? ""}>
+            <TextField value={nameVal} onChange={(v) => setNameVal(String(v))} isRequired isInvalid={!!fieldErrors.name} validationBehavior="aria" className="w-full">
               <Label className="text-sm font-medium text-foreground mb-2">Space name</Label>
               <Input placeholder="e.g. Client XYZ" />
               {fieldErrors.name && <FieldError>{fieldErrors.name}</FieldError>}
             </TextField>
 
-            <Select name="type" defaultSelectedKey={initialData?.type ?? "personal"} className="w-full">
+            <Select selectedKey={typeVal} onSelectionChange={(k) => setTypeVal(String(k))} className="w-full">
               <Label className="text-sm font-medium text-foreground mb-2">Type</Label>
               <Select.Trigger><Select.Value /></Select.Trigger>
               <Select.Popover className="bg-popover border border-border shadow-sm">
@@ -120,7 +131,7 @@ export function SpaceFormDialog({ isOpen, onClose, onSubmit, initialData, title,
               </div>
             </div>
 
-            <TextField name="description" isInvalid={!!fieldErrors.description} validationBehavior="aria" className="w-full" defaultValue={initialData?.description ?? ""}>
+            <TextField value={descVal} onChange={(v) => setDescVal(String(v))} isInvalid={!!fieldErrors.description} validationBehavior="aria" className="w-full">
               <Label className="text-sm font-medium text-foreground mb-2">Description</Label>
               <TextArea placeholder="Optional note about this space..." rows={3} />
               {fieldErrors.description && <FieldError>{fieldErrors.description}</FieldError>}
@@ -128,8 +139,10 @@ export function SpaceFormDialog({ isOpen, onClose, onSubmit, initialData, title,
           </div>
 
           <div className="flex gap-3 p-6 pt-4 border-t border-border shrink-0 bg-card">
-            <Button variant="tertiary" type="button" onPress={onClose} className="flex-1 h-10">Cancel</Button>
-            <Button type="submit" className="flex-1 h-10 text-primary-foreground font-medium bg-primary hover:bg-primary-hover">{submitLabel}</Button>
+            <Button variant="tertiary" type="button" onPress={onClose} isDisabled={!!isPending} className="flex-1 h-10">Cancel</Button>
+            <Button type="submit" isDisabled={!!isPending || (!!initialData && !isDirty)} className="flex-1 h-10 text-primary-foreground font-medium bg-primary hover:bg-primary-hover">
+              {isPending ? <span className="inline-flex items-center gap-2"><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Saving…</span> : submitLabel}
+            </Button>
           </div>
         </form>
       </div>

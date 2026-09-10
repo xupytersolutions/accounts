@@ -2,6 +2,7 @@
 
 import { SessionProvider } from "next-auth/react";
 import { useEffect } from "react";
+import { QueryProvider } from "@/lib/query/provider";
 
 export function Providers({
   children,
@@ -16,5 +17,9 @@ export function Providers({
     document.documentElement.setAttribute("data-theme", savedTheme);
   }, []);
 
-  return <SessionProvider>{children}</SessionProvider>;
+  return (
+    <SessionProvider>
+      <QueryProvider>{children}</QueryProvider>
+    </SessionProvider>
+  );
 }

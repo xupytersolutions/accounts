@@ -80,10 +80,11 @@ export type SpaceCardProps = {
 export type SpaceFormDialogProps = {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (fd: FormData) => Promise<void>;
+  onSubmit: (payload: { name: string; type: string; description?: string | null; color?: string | null; icon?: string | null }) => Promise<void>;
   initialData?: Space | null;
   title: string;
   submitLabel: string;
+  isPending?: boolean;
 };
 
 export type PasswordGeneratorProps = { onChoose?: (pwd: string) => void; hideAddToSpace?: boolean };

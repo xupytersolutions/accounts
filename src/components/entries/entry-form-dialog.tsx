@@ -16,14 +16,15 @@ type EntryFormDialogProps = {
   editing: VaultEntry | null;
   spaceId: string;
   allCategories: Category[];
-  createEntry: (fd: FormData) => Promise<void>;
-  updateEntry: (fd: FormData) => Promise<void>;
+  createEntry: (payload: Record<string, unknown>) => Promise<unknown>;
+  updateEntry: (payload: Record<string, unknown> & { entryId: string }) => Promise<unknown>;
   genPassword?: string | null;
   genCreate?: boolean;
   onGenConsumed?: () => void;
+  isPending?: boolean;
 };
 
-export function EntryFormDialog({ isOpen, onClose, editing, spaceId, allCategories, createEntry, updateEntry, genPassword, genCreate, onGenConsumed }: EntryFormDialogProps) {
+export function EntryFormDialog({ isOpen, onClose, editing, spaceId, allCategories, createEntry, updateEntry, genPassword, genCreate, onGenConsumed, isPending }: EntryFormDialogProps) {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState(false);
   const [showGenModal, setShowGenModal] = useState(false);
@@ -81,38 +82,51 @@ export function EntryFormDialog({ isOpen, onClose, editing, spaceId, allCategori
 
   if (!isOpen) return null;
 
-  const handleAction = async (fd: FormData) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     setFieldErrors({});
+    const pwdVal = editing ? editPwd : createPwd;
+    // build payload for validation + API
+    const basePayload: Record<string, unknown> = {
+      title: titleVal.trim() || null,
+      email: emailVal.trim(),
+      password: pwdVal,
+      url: urlVal.trim() || null,
+      description: descVal.trim() || null,
+      categoryId: cat.catKey,
+      customCategory: cat.catKey === "custom" ? cat.customName : null,
+      icon: cat.icon || null,
+      color: cat.color || null,
+      logoUrl: cat.logoUrl || null,
+      category: cat.catKey === "custom" ? cat.customName : cat.catKey === "none" ? null : null,
+    };
+    if (cat.catKey === "none") { basePayload.categoryId = "none"; }
+    else if (cat.catKey === "custom") { basePayload.categoryId = "custom"; }
     try {
       if (editing) {
-        fd.set("entryId", editing.id);
-        if (cat.catKey === "none") { fd.set("categoryId", "none"); fd.delete("category"); fd.delete("customCategory"); fd.delete("icon"); fd.delete("color"); fd.delete("logoUrl"); }
-        else if (cat.catKey === "custom") { fd.set("categoryId", "custom"); fd.set("customCategory", cat.customName); fd.set("icon", cat.icon); fd.set("color", cat.color); fd.set("logoUrl", cat.logoUrl || ""); }
-        else { fd.set("categoryId", cat.catKey); fd.delete("category"); fd.delete("customCategory"); fd.set("icon", cat.icon); fd.set("color", cat.color); fd.set("logoUrl", cat.logoUrl || ""); }
-        const toCheck: Record<string, unknown> = { title: String(fd.get("title") || "").trim() || null, email: String(fd.get("email") || "").trim(), password: String(fd.get("password") || "") || null, url: String(fd.get("url") || "").trim() || null, description: String(fd.get("description") || "").trim() || null, category: String(fd.get("category") || fd.get("customCategory") || "").trim() || null, icon: String(fd.get("icon") || "").trim() || null, color: String(fd.get("color") || "").trim() || null, logoUrl: String(fd.get("logoUrl") || "").trim() || null, entryId: editing.id, spaceId };
+        const toCheck: Record<string, unknown> = { ...basePayload, password: pwdVal || null, entryId: editing.id, spaceId };
+        if (cat.catKey !== "none" && cat.catKey !== "custom") { toCheck.categoryId = cat.catKey; }
         const parsed = updateEntrySchema.safeParse(toCheck);
         if (!parsed.success) { const m: Record<string, string> = {}; for (const iss of parsed.error.issues as Array<{ path: string; message: string }>) if (!m[iss.path]) m[iss.path] = iss.message; setFieldErrors(m); return; }
-        await updateEntry(fd);
+        await updateEntry({ ...basePayload, entryId: editing.id, spaceId, password: pwdVal || undefined });
       } else {
-        if (cat.catKey === "none") fd.set("categoryId", "none");
-        else if (cat.catKey === "custom") { fd.set("categoryId", "custom"); fd.set("customCategory", cat.customName); fd.set("icon", cat.icon); fd.set("color", cat.color); fd.set("logoUrl", cat.logoUrl || ""); }
-        else { fd.set("categoryId", cat.catKey); fd.set("icon", cat.icon); fd.set("color", cat.color); fd.set("logoUrl", cat.logoUrl || ""); }
-        const toCheck: Record<string, unknown> = { title: String(fd.get("title") || "").trim() || null, email: String(fd.get("email") || "").trim(), password: String(fd.get("password") || "").trim(), url: String(fd.get("url") || "").trim() || null, description: String(fd.get("description") || "").trim() || null, category: String(fd.get("category") || fd.get("customCategory") || "").trim() || null, icon: String(fd.get("icon") || "").trim() || null, color: String(fd.get("color") || "").trim() || null, logoUrl: String(fd.get("logoUrl") || "").trim() || null };
+        const toCheck: Record<string, unknown> = { ...basePayload, password: pwdVal };
         const parsed = entrySchema.safeParse(toCheck);
         if (!parsed.success) { const m: Record<string, string> = {}; for (const iss of parsed.error.issues as Array<{ path: string; message: string }>) if (!m[iss.path]) m[iss.path] = iss.message; setFieldErrors(m); return; }
-        await createEntry(fd);
+        await createEntry({ ...basePayload, spaceId });
       }
       onClose(); onGenConsumed?.(); setFieldErrors({});
-      // clear create fields after success
-      if (!editing) {
-        setTitleVal(""); setEmailVal(""); setUrlVal(""); setDescVal(""); setCreatePwd("");
-      }
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "Validation failed"; const lower = msg.toLowerCase(); const m: Record<string, string> = {};
+      if (!editing) { setTitleVal(""); setEmailVal(""); setUrlVal(""); setDescVal(""); setCreatePwd(""); }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Validation failed"; const lower = msg.toLowerCase(); const m: Record<string, string> = {};
       if (lower.includes("title")) m.title = msg; else if (lower.includes("login") || lower.includes("username") || lower.includes("email")) m.email = msg; else if (lower.includes("password")) m.password = msg; else if (lower.includes("url")) m.url = msg; else if (lower.includes("description") || lower.includes("note")) m.description = msg; else if (lower.includes("category")) m.category = msg; else m.email = msg;
       setFieldErrors(m);
     }
   };
+
+  const isDirtyCreate = titleVal.trim() !== "" || emailVal.trim() !== "" || createPwd !== "" || urlVal.trim() !== "" || descVal.trim() !== "" || cat.catKey !== "none";
+  const isDirtyEdit = editing ? (titleVal.trim() !== (editing.title ?? "") || emailVal.trim() !== (editing.email ?? "") || editPwd !== "" || urlVal.trim() !== (editing.url ?? "") || descVal.trim() !== (editing.description ?? "") || cat.catKey !== (editing.categoryId ?? (editing.category ? "custom" : "none")) ) : false;
+  const isDirty = editing ? isDirtyEdit : isDirtyCreate;
 
   return (
     <>
@@ -120,7 +134,7 @@ export function EntryFormDialog({ isOpen, onClose, editing, spaceId, allCategori
       <div className={`fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-foreground/40 backdrop-blur-[2px] overflow-y-auto ${showGenModal ? "hidden" : ""}`} onClick={onClose} role="dialog" aria-modal="true" aria-hidden={showGenModal}>
         <div className="bg-card rounded-t-2xl sm:rounded-2xl border-t sm:border border-border shadow-sm w-full sm:max-w-lg max-h-[90dvh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-4 sm:py-5 border-b border-border shrink-0"><h3 className="text-lg font-semibold text-foreground">{editing ? "Edit account" : "Add account"}</h3><Button variant="ghost" isIconOnly size="sm" onPress={onClose} aria-label="Close" className="shrink-0 -mr-1"><XMarkIcon className="w-5 h-5" /></Button></div>
-          <form noValidate key={editing?.id ?? "new"} action={handleAction} className="flex flex-col flex-1 min-h-0">
+          <form noValidate key={editing?.id ?? "new"} onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
             <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 sm:py-6 space-y-4 overscroll-contain">
               <input type="hidden" name="spaceId" value={spaceId} />
               <TextField value={titleVal} onChange={(v) => setTitleVal(v as string)} name="title" isInvalid={!!fieldErrors.title} validationBehavior="aria" className="w-full"><Label className="text-sm font-medium text-foreground mb-2">Title <span className="text-muted-foreground font-normal">(unique)</span></Label><Input placeholder="e.g. Gmail, AWS root" autoFocus={!!genCreate && !editing} />{fieldErrors.title && <FieldError>{fieldErrors.title}</FieldError>}</TextField>
@@ -154,7 +168,7 @@ export function EntryFormDialog({ isOpen, onClose, editing, spaceId, allCategori
               <TextField value={urlVal} onChange={(v) => setUrlVal(v as string)} name="url" type="url" isInvalid={!!fieldErrors.url} validationBehavior="aria" className="w-full"><Label className="text-sm font-medium text-foreground mb-2">URL (optional)</Label><Input placeholder="https://..." type="url" />{fieldErrors.url && <FieldError>{fieldErrors.url}</FieldError>}</TextField>
               <TextField value={descVal} onChange={(v) => setDescVal(v as string)} name="description" isInvalid={!!fieldErrors.description} validationBehavior="aria" className="w-full"><Label className="text-sm font-medium text-foreground mb-2">Description</Label><TextArea placeholder="Notes, recovery codes, 2FA hints…" rows={3} />{fieldErrors.description && <FieldError>{fieldErrors.description}</FieldError>}</TextField>
             </div>
-            <div className="flex gap-3 p-4 sm:p-6 pt-4 border-t border-border shrink-0 bg-card"><Button variant="tertiary" type="button" onPress={onClose} className="flex-1 h-10">Cancel</Button><Button type="submit" variant="primary" className="flex-1 h-10 font-medium">{editing ? "Save changes" : "Save account"}</Button></div>
+            <div className="flex gap-3 p-4 sm:p-6 pt-4 border-t border-border shrink-0 bg-card"><Button variant="tertiary" type="button" onPress={onClose} isDisabled={!!isPending} className="flex-1 h-10">Cancel</Button><Button type="submit" variant="primary" isDisabled={!!isPending || (!!editing && !isDirty)} className="flex-1 h-10 font-medium">{isPending ? <span className="inline-flex items-center gap-2"><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Saving…</span> : editing ? "Save changes" : "Save account"}</Button></div>
           </form>
         </div>
       </div>
