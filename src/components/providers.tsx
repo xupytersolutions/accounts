@@ -3,6 +3,9 @@
 import { SessionProvider } from "next-auth/react";
 import { useEffect } from "react";
 import { QueryProvider } from "@/lib/query/provider";
+import { RegisterSW } from "@/components/pwa/register-sw";
+import { InstallPrompt } from "@/components/pwa/install-prompt";
+import { UpdateToast } from "@/components/pwa/update-toast";
 
 export function Providers({
   children,
@@ -19,7 +22,12 @@ export function Providers({
 
   return (
     <SessionProvider>
-      <QueryProvider>{children}</QueryProvider>
+      <QueryProvider>
+        {children}
+        <RegisterSW />
+        <InstallPrompt />
+        <UpdateToast />
+      </QueryProvider>
     </SessionProvider>
   );
 }
