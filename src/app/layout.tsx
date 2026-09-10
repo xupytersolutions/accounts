@@ -28,10 +28,24 @@ const geistMono = Geist_Mono({
   display: "swap",
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
 export const metadata: Metadata = {
-  title: "Xupyter One Account — Accounts, organized",
+  metadataBase: new URL(siteUrl),
+  applicationName: "OneAccount",
+  title: {
+    default: "Xupyter One Account — Accounts, organized",
+    template: "%s | OneAccount",
+  },
   description:
-    "Secure personal & team vault for account emails, passwords and notes. Google login, spaces for personal / company / clients.",
+    "OneAccount by Xupyter — secure vault for all your logins. Organize personal, company & client accounts in spaces, with Google sign-in, encrypted passwords and instant search.",
+  keywords: ["password manager", "account vault", "Xupyter", "OneAccount", "spaces", "secure vault", "google login"],
+  authors: [{ name: "Xupyter", url: siteUrl }],
+  creator: "Xupyter",
+  publisher: "Xupyter",
+  category: "productivity",
+  formatDetection: { email: false, address: false, telephone: false },
+  alternates: { canonical: "/" },
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
@@ -40,7 +54,7 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/favicon.ico", sizes: "any", type: "image/x-icon" },
+      { url: "/favicon.ico", sizes: "any" },
       { url: "/favicons/favicon-16x16.png", sizes: "16x16", type: "image/png" },
       { url: "/favicons/favicon-32x32.png", sizes: "32x32", type: "image/png" },
       { url: "/favicons/android-chrome-192x192.png", sizes: "192x192", type: "image/png" },
@@ -48,11 +62,31 @@ export const metadata: Metadata = {
     ],
     apple: [{ url: "/favicons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
     shortcut: [{ url: "/favicon.ico" }],
+    other: [{ rel: "apple-touch-icon", url: "/apple-touch-icon.png", sizes: "180x180" }],
   },
   openGraph: {
-    title: "Xupyter One Account",
-    description: "All your accounts, neatly organized in spaces.",
+    type: "website",
+    locale: "en_US",
+    url: siteUrl,
+    siteName: "OneAccount",
+    title: "Xupyter One Account — Accounts, organized",
+    description: "All your accounts, neatly organized in spaces. Secure vault with spaces for personal / company / clients.",
+    images: [
+      {
+        url: "/favicons/android-chrome-512x512.png",
+        width: 512,
+        height: 512,
+        alt: "OneAccount",
+      },
+    ],
   },
+  twitter: {
+    card: "summary",
+    title: "Xupyter One Account — Accounts, organized",
+    description: "Secure vault for all your logins. Organize in spaces, sync everywhere.",
+    images: ["/favicons/android-chrome-512x512.png"],
+  },
+  verification: {},
 };
 
 export const viewport: Viewport = {
