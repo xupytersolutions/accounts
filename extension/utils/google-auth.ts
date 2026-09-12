@@ -2,8 +2,12 @@ import { getSiteUrl } from "./storage";
 
 const GOOGLE_CLIENT_ID = "1028690921231-idhqso2dcto3ebj3t639f5tsqv425h3b.apps.googleusercontent.com";
 
+let pendingFlow: Promise<string> | null = null;
+
 export async function signInWithGoogle(): Promise<string> {
-  const redirectUri = chrome.identity.getRedirectURL();
+  if (pendingFlow) return pendingFlow;
+  pendingFlow = (async () => {
+    const redirectUri = chrome.identity.getRedirectURL();
   const nonce = crypto.randomUUID();
   const authUrl =
     `https://accounts.google.com/o/oauth2/v2/auth?` +
@@ -42,4 +46,10 @@ export async function signInWithGoogle(): Promise<string> {
   const j = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error((j as { error?: string }).error || "Google auth failed");
   return (j as { token: string }).token;
+  })();
+  try {
+    return await pendingFlow;
+  } finally {
+    pendingFlow = null;
+  }
 }
