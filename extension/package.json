@@ -1,0 +1,10 @@
+{
+  "name": "one-account-extension",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "dependencies": {
+    "@repo/shared": "workspace:*",
+    "@repo/ui": "workspace:*"
+  }
+}

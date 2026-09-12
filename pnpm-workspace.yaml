@@ -1,3 +1,6 @@
+packages:
+  - "packages/*"
+  - "extension"
 allowBuilds:
   '@heroui/shared-utils': true
   '@parcel/watcher': true

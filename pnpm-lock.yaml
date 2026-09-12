@@ -109,6 +109,26 @@ importers:
         specifier: 0.20.8
         version: 0.20.8(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.33.0)(rollup@4.63.1)
 
+  extension:
+    dependencies:
+      '@repo/shared':
+        specifier: workspace:*
+        version: link:../packages/shared
+      '@repo/ui':
+        specifier: workspace:*
+        version: link:../packages/ui
+
+  packages/shared: {}
+
+  packages/ui:
+    dependencies:
+      '@heroui/react':
+        specifier: ^3.2.4
+        version: 3.2.4(@react-aria/i18n@3.13.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(@react-aria/ssr@3.10.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(@react-aria/utils@3.34.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(@react-spectrum/provider@3.11.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-aria-components@1.21.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-aria@3.52.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(tailwindcss@4.3.3)
+      '@heroui/styles':
+        specifier: ^3.2.4
+        version: 3.2.4(tailwind-merge@3.4.0)(tailwindcss@4.3.3)
+
 packages:
 
   '@1natsu/wait-element@4.2.0':

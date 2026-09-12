@@ -4,6 +4,7 @@ import { getToken, setToken, clearToken, getSiteUrl, setSiteUrl } from "../../ut
 import { listSpaces, searchEntries, getCredential, ApiError } from "../../utils/api";
 import { getCurrentHost } from "../../utils/host";
 import { isDomainMatch } from "../../utils/domain";
+import { signInWithGoogle } from "../../utils/google-auth";
 import "./style.css";
 
 type Space = { id: string; name: string; type: string; color?: string | null; _count?: { entries: number } };
@@ -20,6 +21,7 @@ function AuthGate({ onAuthed, siteUrl, setSiteUrl: setSiteUrlCb }: { onAuthed: (
   const [url, setUrl] = useState(siteUrl);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const test = async () => {
     setErr(null);
     if (!token.trim()) { setErr("Paste token from site"); return; }
@@ -35,6 +37,22 @@ function AuthGate({ onAuthed, siteUrl, setSiteUrl: setSiteUrlCb }: { onAuthed: (
       setErr(msg);
       if (e instanceof ApiError && e.status === 401) await clearToken();
     } finally { setLoading(false); }
+  };
+  const handleGoogle = async () => {
+    setErr(null);
+    setGoogleLoading(true);
+    try {
+      await setSiteUrl(url);
+      const t = await signInWithGoogle();
+      await setToken(t);
+      await listSpaces(t);
+      onAuthed(t);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Google sign-in failed";
+      // Provide guidance for redirect_uri not registered
+      if (msg.includes("redirect")) setErr(msg + " — add " + (typeof chrome !== "undefined" && (chrome as unknown as { identity?: { getRedirectURL?: () => string } }).identity?.getRedirectURL?.() || "https://<id>.chromiumapp.org/") + " to Google Cloud Authorized redirect URIs");
+      else setErr(msg);
+    } finally { setGoogleLoading(false); }
   };
   const openSite = async (auto = false) => {
     const u = url.replace(/\/$/, "") + (auto ? "/extension?auto=1" : "/extension");
@@ -52,8 +70,12 @@ function AuthGate({ onAuthed, siteUrl, setSiteUrl: setSiteUrlCb }: { onAuthed: (
   return (
     <div className="p-4 flex flex-col gap-3 w-[360px]">
       <h1 className="text-base font-semibold">OneAccount</h1>
-      <p className="text-xs text-muted">Paste extension token from site. Never use your website cookie.</p>
+      <p className="text-xs text-muted">Sign in directly or paste extension token. Same vault, same theme.</p>
       <input className="border rounded px-2 py-1.5 text-sm" placeholder="Site URL (http://localhost:3000)" value={url} onChange={(e) => setUrl(e.target.value)} />
+      <button onClick={handleGoogle} disabled={googleLoading} className="bg-white border rounded px-3 py-1.5 text-sm flex items-center justify-center gap-2 disabled:opacity-50">
+        {googleLoading ? "Signing in…" : "Sign in with Google"}
+      </button>
+      <div className="flex items-center gap-2"><span className="flex-1 border-t" /><span className="text-[11px] text-muted">or paste token</span><span className="flex-1 border-t" /></div>
       <div className="flex gap-2">
         <input className="border rounded px-2 py-1.5 text-sm font-mono flex-1" placeholder="Paste token (shown once on site)" value={token} onChange={(e) => setTokenInput(e.target.value)} />
         <button onClick={pasteFromClipboard} className="border rounded px-2 py-1.5 text-xs shrink-0">Paste</button>
@@ -64,7 +86,7 @@ function AuthGate({ onAuthed, siteUrl, setSiteUrl: setSiteUrlCb }: { onAuthed: (
         <button onClick={() => openSite(false)} className="text-xs underline text-left flex-1">Open site →</button>
         <button onClick={() => openSite(true)} className="text-xs underline text-left flex-1 text-right">Connect automatically →</button>
       </div>
-      <p className="text-[11px] text-muted">Auto: opens site, copies token, then Paste. Token 14d, revocable, stored locally only.</p>
+      <p className="text-[11px] text-muted">Token 14d, revocable, stored locally only. No window.postMessage for credentials.</p>
     </div>
   );
 }
