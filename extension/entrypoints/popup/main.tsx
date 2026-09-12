@@ -36,20 +36,35 @@ function AuthGate({ onAuthed, siteUrl, setSiteUrl: setSiteUrlCb }: { onAuthed: (
       if (e instanceof ApiError && e.status === 401) await clearToken();
     } finally { setLoading(false); }
   };
-  const openSite = async () => {
-    const u = url.replace(/\/$/, "") + "/extension";
+  const openSite = async (auto = false) => {
+    const u = url.replace(/\/$/, "") + (auto ? "/extension?auto=1" : "/extension");
     browser.tabs.create({ url: u });
+  };
+  const pasteFromClipboard = async () => {
+    try {
+      const t = await navigator.clipboard.readText();
+      if (t) setTokenInput(t.trim());
+      else setErr("Clipboard empty");
+    } catch {
+      setErr("Clipboard read failed — paste manually");
+    }
   };
   return (
     <div className="p-4 flex flex-col gap-3 w-[360px]">
       <h1 className="text-base font-semibold">OneAccount</h1>
       <p className="text-xs text-muted">Paste extension token from site. Never use your website cookie.</p>
       <input className="border rounded px-2 py-1.5 text-sm" placeholder="Site URL (http://localhost:3000)" value={url} onChange={(e) => setUrl(e.target.value)} />
-      <input className="border rounded px-2 py-1.5 text-sm font-mono" placeholder="Paste token (shown once on site)" value={token} onChange={(e) => setTokenInput(e.target.value)} />
+      <div className="flex gap-2">
+        <input className="border rounded px-2 py-1.5 text-sm font-mono flex-1" placeholder="Paste token (shown once on site)" value={token} onChange={(e) => setTokenInput(e.target.value)} />
+        <button onClick={pasteFromClipboard} className="border rounded px-2 py-1.5 text-xs shrink-0">Paste</button>
+      </div>
       {err && <p className="text-xs text-red-600">{err}</p>}
       <button onClick={test} disabled={loading} className="bg-black text-white rounded px-3 py-1.5 text-sm disabled:opacity-50">{loading ? "Checking…" : "Save & Connect"}</button>
-      <button onClick={openSite} className="text-xs underline text-left">Open site to generate token →</button>
-      <p className="text-[11px] text-muted">Token expires in 14 days, revocable. Stored locally only.</p>
+      <div className="flex gap-2">
+        <button onClick={() => openSite(false)} className="text-xs underline text-left flex-1">Open site →</button>
+        <button onClick={() => openSite(true)} className="text-xs underline text-left flex-1 text-right">Connect automatically →</button>
+      </div>
+      <p className="text-[11px] text-muted">Auto: opens site, copies token, then Paste. Token 14d, revocable, stored locally only.</p>
     </div>
   );
 }
