@@ -10,6 +10,7 @@ export async function POST(req: Request) {
     const target = await prisma.space.findFirst({ where: { id: targetSpaceId, ownerId: user.id } });
     if (!target) return jsonError("Target space not found", 404);
     const entries = await prisma.vaultEntry.findMany({ where: { id: { in: entryIds } }, include: { space: true } });
+    if (entries.length !== entryIds.length) return jsonError("Some entries not found", 404);
     for (const entry of entries) {
       const source = await prisma.space.findFirst({ where: { id: entry.spaceId, ownerId: user.id } });
       if (!source) return jsonError("Unauthorized source", 401);

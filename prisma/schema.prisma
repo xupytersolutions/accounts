@@ -25,10 +25,11 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts      Account[]
-  sessions      Session[]
-  spaces        Space[]
-  categories    Category[]
+  accounts        Account[]
+  sessions        Session[]
+  spaces          Space[]
+  categories      Category[]
+  extensionTokens ExtensionToken[]
 
   @@map("users")
 }
@@ -113,7 +114,7 @@ model VaultEntry {
   space       Space     @relation(fields: [spaceId], references: [id], onDelete: Cascade)
   title       String?   // optional display name for the credential
   email       String    // account email
-  password    String    @db.Text // encrypted at rest in future; plain for MVP
+  password    String    @db.Text // AES-GCM encrypted (v1: base64 iv+tag+cipher); legacy plaintext migrated on read/write
   description String?   @db.Text
   url         String?
   category    String?   // legacy free text e.g. gmail, yahoo - kept for import fallback
@@ -128,4 +129,21 @@ model VaultEntry {
   @@index([spaceId])
   @@index([categoryId])
   @@map("vault_entries")
+}
+
+model ExtensionToken {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash  String    @unique
+  name       String?
+  createdAt  DateTime  @default(now())
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  lastUsedAt DateTime?
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@index([expiresAt])
+  @@map("extension_tokens")
 }

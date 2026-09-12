@@ -49,6 +49,7 @@ export function SpaceClient({ spaceId }: { spaceId: string }) {
   const [sortBy, setSortBy] = useState("updated");
   const [viewMode, setViewMode] = useViewMode("one-account:accountsView");
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
+  const [revealed, setRevealed] = useState<Record<string, string>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editing, setEditing] = useState<VaultEntry | null>(null);
@@ -83,9 +84,50 @@ export function SpaceClient({ spaceId }: { spaceId: string }) {
     }
   }, [searchParams, router, isAddOpen, editing]);
 
-  const toggleShow = (id: string) => setShowPasswords((p) => ({ ...p, [id]: !p[id] }));
-  const handleCopy = async (id: string, pwd: string) => { await navigator.clipboard.writeText(pwd); setCopiedId(id); window.setTimeout(() => setCopiedId((cur) => (cur === id ? null : cur)), 1500); };
-  const handleExport = () => { if (space) exportEntriesToFile(entries, space.name); };
+  const fetchCredential = async (id: string) => {
+    if (revealed[id]) return revealed[id];
+    try {
+      const res = await fetch(`/api/entries/${id}/credential`);
+      if (!res.ok) throw new Error("Failed to reveal");
+      const data = await res.json();
+      const pwd = String(data.password ?? "");
+      setRevealed((prev) => ({ ...prev, [id]: pwd }));
+      return pwd;
+    } catch {
+      return "";
+    }
+  };
+  const toggleShow = async (id: string) => {
+    const willShow = !showPasswords[id];
+    if (willShow && !revealed[id]) await fetchCredential(id);
+    setShowPasswords((p) => ({ ...p, [id]: !p[id] }));
+  };
+  const handleCopy = async (id: string, pwd: string) => {
+    let toCopy = pwd;
+    if (!toCopy || toCopy === "••••••••••") toCopy = await fetchCredential(id);
+    if (!toCopy) {
+      const e = entries.find((x) => x.id === id);
+      toCopy = (e as unknown as { password?: string })?.password ?? "";
+      if (!toCopy || toCopy === "••••••••••") toCopy = await fetchCredential(id);
+    }
+    if (!toCopy) return;
+    await navigator.clipboard.writeText(toCopy);
+    setCopiedId(id);
+    window.setTimeout(() => setCopiedId((cur) => (cur === id ? null : cur)), 1500);
+  };
+  const handleExport = async () => {
+    if (!space) return;
+    try {
+      const res = await fetch(`/api/spaces/${spaceId}/export`);
+      if (!res.ok) throw new Error("Export failed");
+      const data = await res.json();
+      const exportEntries = (data.entries ?? []) as VaultEntry[];
+      exportEntriesToFile(exportEntries, space.name);
+    } catch {
+      // fallback to sanitized entries (without password) if explicit export fails
+      exportEntriesToFile(entries, space.name);
+    }
+  };
   const handleFile = async (f: File | null) => {
     if (!f) return; setImportFileName(f.name); setImportError(""); const text = await f.text(); const rows = parseImportText(text);
     if (rows.length === 0) setImportError("No valid rows found. Expected txt with CSV/JSON: title,email,password,url,description or JSON array.");
@@ -166,12 +208,15 @@ export function SpaceClient({ spaceId }: { spaceId: string }) {
           <AutoSkeleton loading={false}>
             {filteredEntries.length === 0 ? (<div className="flex flex-col items-center justify-center py-12 border border-dashed border-border rounded-xl bg-muted/20"><p className="text-sm font-medium text-foreground mb-1">No matches</p><p className="text-sm text-muted-foreground mb-4">Try adjusting search or filters.</p><Button variant="tertiary" onPress={() => { setSearch(""); setCategoryFilter("all"); setSortBy("updated"); }}>Clear filters</Button></div>) : (
               <div className={`grid mb-8 ${viewMode === "compact" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"}`}>
-                {filteredEntries.map((e) => (<EntryCard key={e.id} entry={e} viewMode={viewMode} isSelected={selected.has(e.id)} onToggleSelect={() => toggle(e.id)} onMenuAt={(x, y) => setEntryCtx({ id: e.id, x, y })} onContextMenu={(ev) => { ev.preventDefault(); setEntryCtx({ id: e.id, x: ev.clientX, y: ev.clientY }); }} showPasswordMap={showPasswords} onToggleShow={toggleShow} copiedId={copiedId} onCopy={handleCopy} />))}
+                {filteredEntries.map((e) => {
+                  const withPwd = { ...e, password: revealed[e.id] ?? (e as unknown as { password?: string }).password ?? "" } as typeof e & { password: string };
+                  return <EntryCard key={e.id} entry={withPwd} viewMode={viewMode} isSelected={selected.has(e.id)} onToggleSelect={() => toggle(e.id)} onMenuAt={(x, y) => setEntryCtx({ id: e.id, x, y })} onContextMenu={(ev) => { ev.preventDefault(); setEntryCtx({ id: e.id, x: ev.clientX, y: ev.clientY }); }} showPasswordMap={showPasswords} onToggleShow={toggleShow} copiedId={copiedId} onCopy={handleCopy} />;
+                })}
                 <Card className={`border-2 border-dashed border-border bg-muted/20 hover:border-border-strong hover:bg-muted/30 transition-colors cursor-pointer shadow-none rounded-2xl flex flex-col justify-center h-full ${viewMode === "compact" ? "min-h-[52px]" : "min-h-[180px]"}`} onClick={() => { setEditing(null); setIsAddOpen(true); }}><Card.Content className={`flex flex-col items-center justify-center text-center ${viewMode === "compact" ? "px-2.5 py-1.5" : "p-6 py-8"}`}><div className={`${viewMode === "compact" ? "w-6 h-6 mb-1" : "w-12 h-12 mb-3"} rounded-xl bg-muted border border-border flex items-center justify-center`}><PlusIcon className={`${viewMode === "compact" ? "w-3.5 h-3.5" : "w-6 h-6"} text-muted-foreground`} /></div><p className={`${viewMode === "compact" ? "text-xs" : "text-sm"} font-semibold text-foreground ${viewMode === "compact" ? "" : "mb-1"}`}>Create a new account</p>{viewMode !== "compact" && <p className="text-sm text-muted-foreground">Add credentials to this space.</p>}</Card.Content></Card>
               </div>
             )}
           </AutoSkeleton>
-          {entryCtx && entryCtxEntry && (<div data-context-menu className="fixed z-40 min-w-[180px] bg-popover border border-border shadow-sm rounded-xl p-1 flex flex-col" style={{ left: Math.min(entryCtx.x, typeof window !== "undefined" ? window.innerWidth - 190 : entryCtx.x), top: entryCtx.y }} onClick={(ev) => ev.stopPropagation()}><button className="text-left px-3 py-2 text-sm rounded-lg hover:bg-muted text-foreground flex items-center gap-2" onClick={() => { setEntryCtx(null); setEditing(entryCtxEntry); setIsAddOpen(true); }}><PencilSquareIcon className="w-4 h-4" />Edit</button><button className="text-left px-3 py-2 text-sm rounded-lg hover:bg-muted text-foreground flex items-center gap-2" onClick={async () => { await navigator.clipboard.writeText(entryCtxEntry.password); setCopiedId(entryCtxEntry.id); window.setTimeout(() => setCopiedId((cur) => (cur === entryCtxEntry.id ? null : cur)), 1500); setEntryCtx(null); }}><ClipboardDocumentIcon className="w-4 h-4" />Copy password</button><button className="text-left px-3 py-2 text-sm rounded-lg hover:bg-muted text-foreground flex items-center gap-2" onClick={() => { setEntryCtx(null); setTransferOpen({ ids: [entryCtx.id] }); }}><ArrowsRightLeftIcon className="w-4 h-4" />Transfer</button><button className="text-left px-3 py-2 text-sm rounded-lg hover:bg-destructive/10 text-destructive flex items-center gap-2" onClick={() => { setEntryCtx(null); setDeleteTarget(entryCtxEntry); }}><TrashIcon className="w-4 h-4" />Delete</button></div>)}
+          {entryCtx && entryCtxEntry && (<div data-context-menu className="fixed z-40 min-w-[180px] bg-popover border border-border shadow-sm rounded-xl p-1 flex flex-col" style={{ left: Math.min(entryCtx.x, typeof window !== "undefined" ? window.innerWidth - 190 : entryCtx.x), top: entryCtx.y }} onClick={(ev) => ev.stopPropagation()}><button className="text-left px-3 py-2 text-sm rounded-lg hover:bg-muted text-foreground flex items-center gap-2" onClick={() => { setEntryCtx(null); setEditing({ ...entryCtxEntry, password: revealed[entryCtxEntry.id] ?? (entryCtxEntry as unknown as { password?: string }).password ?? "" } as unknown as typeof entryCtxEntry); setIsAddOpen(true); }}><PencilSquareIcon className="w-4 h-4" />Edit</button><button className="text-left px-3 py-2 text-sm rounded-lg hover:bg-muted text-foreground flex items-center gap-2" onClick={async () => { const pwd = revealed[entryCtxEntry.id] ?? (entryCtxEntry as unknown as { password?: string }).password ?? (await fetchCredential(entryCtxEntry.id)); if (!pwd) return; await navigator.clipboard.writeText(pwd); setCopiedId(entryCtxEntry.id); window.setTimeout(() => setCopiedId((cur) => (cur === entryCtxEntry.id ? null : cur)), 1500); setEntryCtx(null); }}><ClipboardDocumentIcon className="w-4 h-4" />Copy password</button><button className="text-left px-3 py-2 text-sm rounded-lg hover:bg-muted text-foreground flex items-center gap-2" onClick={() => { setEntryCtx(null); setTransferOpen({ ids: [entryCtx.id] }); }}><ArrowsRightLeftIcon className="w-4 h-4" />Transfer</button><button className="text-left px-3 py-2 text-sm rounded-lg hover:bg-destructive/10 text-destructive flex items-center gap-2" onClick={() => { setEntryCtx(null); setDeleteTarget(entryCtxEntry); }}><TrashIcon className="w-4 h-4" />Delete</button></div>)}
         </>
       )}
 

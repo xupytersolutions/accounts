@@ -9,6 +9,8 @@ export async function POST(req: Request) {
     if (!spaceId) return jsonError("Space required", 422);
     const space = await prisma.space.findFirst({ where: { id: spaceId, ownerId: user.id } });
     if (!space) return jsonError("Space not found", 404);
+    const count = await prisma.vaultEntry.count({ where: { id: { in: entryIds }, spaceId } });
+    if (count !== entryIds.length) return jsonError("Some entries not found or not in this space", 404);
     await prisma.vaultEntry.deleteMany({ where: { id: { in: entryIds }, spaceId } });
     return Response.json({ ok: true });
   } catch (e) { return withError(e); }

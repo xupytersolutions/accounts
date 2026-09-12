@@ -7,7 +7,7 @@ export default auth((req) => {
   const isLoggedIn = !!req.auth;
   const { pathname } = req.nextUrl;
 
-  const isPrivate = pathname.startsWith("/dashboard") || pathname.startsWith("/spaces");
+  const isPrivate = pathname.startsWith("/dashboard") || pathname.startsWith("/spaces") || pathname.startsWith("/extension") || pathname.startsWith("/settings");
   const isAuthPage = pathname.startsWith("/login");
 
   if (isPrivate && !isLoggedIn) {

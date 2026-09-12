@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireUser, jsonError, withError } from "@/lib/api-helpers";
 import { ensureCategory } from "@/lib/actions/categories";
+import { encrypt } from "@/lib/crypto";
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -25,11 +26,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       let categoryId: string | null = e.categoryId ?? null; let category: string | null = e.category?.trim() || null; let icon: string | null = e.icon ?? null; let color: string | null = e.color ?? null; let logoUrl: string | null = e.logoUrl ?? null;
       if (categoryId) { const cat = await prisma.category.findFirst({ where: { id: categoryId, ownerId: user.id } }); if (cat) { category = cat.name; icon = cat.icon; color = cat.color; logoUrl = cat.logoUrl; } }
       else if (category) { const cat = await ensureCategory(category, icon, color, logoUrl, user.id); categoryId = cat.id; category = cat.name; icon = cat.icon; color = cat.color; logoUrl = cat.logoUrl; }
-      return { spaceId, title: e.title?.trim() || null, email: e.email.trim(), password: e.password, url: e.url?.trim() || null, description: e.description?.trim() || null, category, icon, color: color || "#006FEE", logoUrl, categoryId };
+      return { spaceId, title: e.title?.trim() || null, email: e.email.trim(), password: encrypt(String(e.password)), url: e.url?.trim() || null, description: e.description?.trim() || null, category, icon, color: color || "#006FEE", logoUrl, categoryId };
     }));
     await prisma.vaultEntry.createMany({ data: mapped });
     const created = await prisma.vaultEntry.findMany({ where: { spaceId }, include: { categoryRef: true }, orderBy: { createdAt: "desc" } });
-    return Response.json({ entries: created }, { status: 201 });
+    const sanitized = created.map((e) => {
+      const { password: _p, ...rest } = e;
+      void _p;
+      return rest;
+    });
+    return Response.json({ entries: sanitized }, { status: 201 });
   } catch (e) {
     return withError(e);
   }

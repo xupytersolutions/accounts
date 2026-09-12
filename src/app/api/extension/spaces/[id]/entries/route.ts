@@ -1,31 +1,13 @@
 import { prisma } from "@/lib/prisma";
+import { jsonError, withError } from "@/lib/api-helpers";
+import { requireExtensionUser } from "@/lib/auth-extension";
 import { entrySchema } from "@/lib/validators";
-import { requireUser, jsonError, withError } from "@/lib/api-helpers";
 import { ensureCategory } from "@/lib/actions/categories";
-import { encrypt, decryptIfNeeded } from "@/lib/crypto";
-
-function sanitize(entry: Record<string, unknown>) {
-  const { password: _p, ...rest } = entry as { password: string } & Record<string, unknown>;
-  void _p;
-  return rest;
-}
-
-export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const user = await requireUser();
-    const { id: spaceId } = await params;
-    const space = await prisma.space.findFirst({ where: { id: spaceId, ownerId: user.id } });
-    if (!space) return jsonError("Space not found", 404);
-    const entries = await prisma.vaultEntry.findMany({ where: { spaceId }, include: { categoryRef: true }, orderBy: { createdAt: "desc" } });
-    return Response.json({ entries: entries.map(sanitize) });
-  } catch (e) {
-    return withError(e);
-  }
-}
+import { encrypt } from "@/lib/crypto";
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const user = await requireUser();
+    const user = await requireExtensionUser(req);
     const { id: spaceId } = await params;
     const body = await req.json();
     const parsedEntry = entrySchema.safeParse({
@@ -74,7 +56,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       data: { spaceId, title: body.title ? String(body.title).trim() || null : null, email: String(body.email).trim(), password: encryptedPassword, description: body.description ? String(body.description).trim() || null : null, url: body.url ? String(body.url).trim() || null : null, category, icon, color, logoUrl, categoryId },
       include: { categoryRef: true },
     });
-    return Response.json({ entry: sanitize(entry as unknown as Record<string, unknown>) }, { status: 201 });
+    const { password: _p, ...sanitized } = entry as unknown as Record<string, unknown> & { password: string };
+    void _p;
+    return Response.json({ entry: sanitized }, { status: 201 });
   } catch (e) {
     return withError(e);
   }

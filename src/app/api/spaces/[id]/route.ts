@@ -9,9 +9,14 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     const space = await prisma.space.findFirst({ where: { id, ownerId: user.id } });
     if (!space) return jsonError("Space not found", 404);
     const entries = await prisma.vaultEntry.findMany({ where: { spaceId: id }, include: { categoryRef: true }, orderBy: { createdAt: "desc" } });
+    const sanitized = entries.map((e) => {
+      const { password: _p, ...rest } = e;
+      void _p;
+      return rest;
+    });
     const allSpaces = await prisma.space.findMany({ where: { ownerId: user.id }, select: { id: true, name: true, type: true }, orderBy: { name: "asc" } });
     const allCategories = await prisma.category.findMany({ where: { ownerId: user.id }, orderBy: { name: "asc" } });
-    return Response.json({ space, entries, allSpaces, allCategories });
+    return Response.json({ space, entries: sanitized, allSpaces, allCategories });
   } catch (e) {
     return withError(e);
   }
